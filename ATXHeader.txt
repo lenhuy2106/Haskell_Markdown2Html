@@ -1,0 +1,55 @@
+# foo
+## foo
+### foo
+#### foo
+##### foo
+###### foo
+
+#HalloMaxi
+
+####### foo
+
+#5 bolt
+
+#                  foo
+
+ ### foo
+  ## foo
+   # foo
+
+# foo#
+
+Foo bar
+# baz
+Bar foo
+
+## 
+#                                           FAIL    Example: <h1></h1>                          Output: <p>#</p>
+### ###                                     FAIL    Example: <h3></h3>                          Output: <h3>###</h3>
+
+\## foo                                     FAIL    Example: <p>## foo</p>                      Output: <p>\</p><h2>foo</h2>
+
+# foo *bar* \*baz\*                         FAIL    Example: <h1>foo <em>bar</em> *baz*</h1>    Output: <h1>foo *bar* \*baz\*</h1>
+
+### foo \###                                FAIL    Example: <h3>foo ###</h3>                   Output: <h3>foo \###</h3>
+## foo #\##                                 FAIL    Example: <h2>foo ###</h2>                   Output: <h2>foo #\##</h2>
+# foo \#                                    FAIL    Example: <h1>foo #</h1>                     Output: <h1>foo \#</h1>
+
+****                                        FAIL    Example: <hr />                             Output: <p>****</p>     
+## foo                                      FAIL    Example: <h2>foo</h2>                       Output: <h2>foo</h2>
+****                                        FAIL    Example: <hr />                             Output: <p>****</p>  
+
+    # foo                                   FAIL    Example: <pre><code># foo</code></pre>      Output: <p>    </p><h1>foo</h1>
+
+## foo ##                                   FAIL    Example: <h2>foo</h2>                       Output: <h2>foo ##</h2><p>  </p>
+  ###   bar    ###                          FAIL    Example: <h3>bar</h3>                       Output: <h3>bar    ###</h3>     
+
+# foo ##################################    FAIL    Example: <h1>foo</h1>                       Output: <h1>foo ##################################</h1>
+##### foo ##                                FAIL    Example: <h5>foo</h5>                       Output: <h5>foo ##</h5>
+
+### foo ###                                 FAIL    Example: <h3>foo</h3>                       Output: <h3>foo ###</h3>
+
+### foo ### b                               FAIL    Example: <h3>foo ### b</h3>                 Output: <h3>foo <h3>b</h3></h3>
+    
+foo                                         FAIL    Example: <p>foo # bar</p>                   Output: <p>foo</p><h1>bar</h1>
+    # bar

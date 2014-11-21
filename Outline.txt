@@ -1,6 +1,19 @@
 ToDo:
 
 Scanner:
-    Token für den Entwerter '\' muss noch angelegt werden.
+    Token für den Entwerter '\' muss noch angelegt werden.  []
+    Token für Special-Char '*' muss noch angelegt werden.   []
 
 Parser:
+    SyntaxFehler:
+        #   allein                                          []
+        #   am Ende als End-Tag                             []
+       '\'  Entwerter nicht implementiert                   []
+       ' '  Falls mehr als 3 Leerzeichen                    []
+
+CodeGen:
+    Fehlende CodeFragmente/Implementierung:
+       <hr\>            Tag einfügen                        []
+       <pre><code>                                          []
+
+Siehe ATXHeader.txt
