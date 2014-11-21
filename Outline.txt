@@ -1,0 +1,6 @@
+ToDo:
+
+Scanner:
+    Token für den Entwerter '\' muss noch angelegt werden.
+
+Parser:
