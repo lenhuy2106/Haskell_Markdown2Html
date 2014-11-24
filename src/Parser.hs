@@ -16,6 +16,17 @@ parse (T_Newline:T_Newline:xs) =
         (\(Sequence ast) -> Sequence (Emptyline : ast))
         <$> parse xs
 
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-- Vier oder mehr Sterne werden als Token T_HorizontalLine erkannt und hier als HorizontalLine AST weitergegeben
+parse (T_HorizontalLine:xs) =
+        (\(Sequence ast) -> Sequence (HorizontalLine : ast))
+        <$> parse xs
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
 -- einen einzelnen Zeilenumbruch ignorieren wir (TODO: aber nicht mehr bei
 -- z.B. Code Blocks!)
 parse (T_Newline:xs) =

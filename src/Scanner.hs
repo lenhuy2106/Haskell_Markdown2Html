@@ -16,6 +16,7 @@ scan ('\n':xs)    = (T_Newline : ) <$> scan xs
 scan str@(' ':_) = let (blanks, rest) = span (==' ') str
     in ( T_Blanks (length blanks) : ) <$> scan rest
 
+
 -- Hashes die eine Überschrift markieren oder Text
 scan str@('#':_) =
     let (hashes, rest) = span (=='#') str
@@ -26,10 +27,6 @@ scan str@('#':_) =
         <$> scan rest
 
 
--- Text ohne die vorher erkannten Zeichen
-scan str          =
-    let (text, rest) = span (`notElem` "# \n") str
-    in (T_Text text : ) <$> scan rest
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -46,3 +43,8 @@ scan str@('*':_) =
 
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-- Text ohne die vorher erkannten Zeichen
+scan str          =
+    let (text, rest) = span (`notElem` "# \n") str
+    in (T_Text text : ) <$> scan rest
