@@ -35,9 +35,9 @@ Bar foo
 ## foo #\##                                 FAIL    Example: <h2>foo ###</h2>                   Output: <h2>foo #\##</h2>
 # foo \#                                    FAIL    Example: <h1>foo #</h1>                     Output: <h1>foo \#</h1>
 
-****                                        FAIL    Example: <hr />                             Output: <p>****</p>     
-## foo                                      FAIL    Example: <h2>foo</h2>                       Output: <h2>foo</h2>
-****                                        FAIL    Example: <hr />                             Output: <p>****</p>  
+****                                        FAIL    Example: <hr />                             Output: <p>****</p>     [X]
+## foo                                      FAIL    Example: <h2>foo</h2>                       Output: <h2>foo</h2>    [X]
+****                                        FAIL    Example: <hr />                             Output: <p>****</p>     [X]
 
     # foo                                   FAIL    Example: <pre><code># foo</code></pre>      Output: <p>    </p><h1>foo</h1>
 

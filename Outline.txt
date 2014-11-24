@@ -2,7 +2,7 @@ ToDo:
 
 Scanner:
     Token für den Entwerter '\' muss noch angelegt werden.  []
-    Token für Special-Char '*' muss noch angelegt werden.   []
+    Token für Special-Char '*' muss noch angelegt werden.   [X]
 
 Parser:
     SyntaxFehler:
@@ -13,7 +13,7 @@ Parser:
 
 CodeGen:
     Fehlende CodeFragmente/Implementierung:
-       <hr\>            Tag einfügen                        []
+       <hr\>            Tag einfügen                        [X]
        <pre><code>                                          []
 
 Siehe ATXHeader.txt

@@ -9,8 +9,17 @@ scan :: String -> Maybe [Token]
 -- ist der Eingabestrom zuende, ist es die Rekursion auch
 scan ""           = Just []
 
+
+    
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- ein EscapeChar
+-- scan ('\\':xs)    = (T_EscapeChar : ) <$> scan xs
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 -- ein Zeilenumbruch
 scan ('\n':xs)    = (T_Newline : ) <$> scan xs
+
 
 -- eine Anzahl Leerzeichen
 scan str@(' ':_) = let (blanks, rest) = span (==' ') str

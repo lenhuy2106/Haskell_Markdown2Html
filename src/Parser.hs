@@ -21,8 +21,9 @@ parse (T_Newline:T_Newline:xs) =
 
 -- Vier oder mehr Sterne werden als Token T_HorizontalLine erkannt und hier als HorizontalLine AST weitergegeben
 parse (T_HorizontalLine:xs) =
-        (\(Sequence ast) -> Sequence (HorizontalLine : ast))
+        (\(Sequence ast)-> Sequence (HorizontalLine : ast))
         <$> parse xs
+        
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -42,7 +43,7 @@ parse (T_H i : xs) =
       (T_Blanks _ : content') ->
         (\(Sequence ast) headerAst -> Sequence (H i (unP headerAst) : ast))
          <$> parse rest
-         <*> parse content'
+         <*> modifyAst content'
       -- kein Leerzeichen == kein Header
       _ -> addP (Text (replicate i '#')) <$> parse xs
 
@@ -63,6 +64,19 @@ unP :: AST -> AST
 unP (Sequence [P asts]) = Sequence asts
 unP (Sequence (P ast : asts )) = Sequence (Sequence ast : asts)
 unP ast = ast
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-- check End
+modifyAst :: [Token] -> Maybe AST
+modifyAst tmpcontent = 
+    let lastT = last tmpcontent
+        --sndLastT = last !! ((length last) - 1)
+    in case lastT of
+        T_H _ -> parse $ init tmpcontent
+        _ -> parse tmpcontent
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Mehrere aufeinander folgende Texte, Blanks, etc. werden zu einem Absatz
 -- zusammengefügt.
