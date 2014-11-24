@@ -25,7 +25,24 @@ scan str@('#':_) =
            else ( T_Text hashes : ))
         <$> scan rest
 
+
 -- Text ohne die vorher erkannten Zeichen
 scan str          =
     let (text, rest) = span (`notElem` "# \n") str
     in (T_Text text : ) <$> scan rest
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-- Sterne die eine HorizontalLine erzeugen
+scan str@('*':_) =
+    let (stars, rest) = span (=='*') str
+        count = length stars
+    in (if count > 3
+           then ( T_HorizontalLine : )
+           else ( T_Text stars : ))
+        <$> scan rest
+
+
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
