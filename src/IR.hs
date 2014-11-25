@@ -6,8 +6,7 @@ data Token = T_Newline          -- '\n'
            | T_Blanks Int       -- Blanks mit Anzahl
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
            | T_HorizontalLine   -- Blanks mit Anzahl
-           | T_EscapeChar       -- Entwerter
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+           | T_IndCodeBlock     -- Eingerückter Code Block
     deriving (Show, Eq)
 
 -- Abstract Syntax Tree für HTML-Generierung. Daher schon nahe an HTML angelehnt.
@@ -17,5 +16,7 @@ data AST = Sequence [AST]   -- eine Sequenz von HTML-Elementen
          | P [AST]          -- ein Absatz mit dem Inhalt
          | Text String      -- einfach nur Text
          | Emptyline        -- eine leere Zeile
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
          | HorizontalLine   -- eine Horizontale Trennlinie
+         | ICB [AST]     -- Eingerückter Code Block
     deriving (Eq, Show)

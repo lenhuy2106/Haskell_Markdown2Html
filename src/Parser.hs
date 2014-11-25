@@ -17,22 +17,22 @@ parse (T_Newline:T_Newline:xs) =
         <$> parse xs
 
 
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---------HORIZONTAL LINE----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Vier oder mehr Sterne werden als Token T_HorizontalLine erkannt und hier als HorizontalLine AST weitergegeben
 parse (T_HorizontalLine:xs) =
         (\(Sequence ast) -> Sequence (HorizontalLine : ast))
         <$> parse xs
 
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---------HEADER----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 -- E26: ein Escapezeichen wird ignoriert und das folgende Zeichen als String gedeutet
-parse (T_EscapeChar:xs) =
-        parse xs
+-- parse (T_EscapeChar:xs) =
+--         parse xs
 
 
--- NewLine before Header is ignored
+-- NewLine vor einem Header wird ignoriert
 parse (T_Newline : T_H i : xs) =
     parse (T_H i : xs)
 
@@ -40,11 +40,6 @@ parse (T_Newline : T_H i : xs) =
 -- z.B. Code Blocks!)
 parse (T_Newline:xs) =
         addP (Text "\n") <$> parse xs
-
-
-
-
-
 
 -- einem Header muss ein Text etc. bis zum Zeilenende folgen.
 -- Das ergibt zusammen einen Header im AST, er wird einer Sequenz hinzugefügt.
@@ -64,6 +59,14 @@ parse (T_H i : xs) =
       -- kein Leerzeichen == kein Header
       _ -> addP (Text (replicate i '#')) <$> parse xs
 
+---------INDENDED CODE BLOCKS----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+parse (T_IndCodeBlock : T_Text str : xs) =
+    addICB (Text str)
+    <$> parse xs
+
+--------OTHERS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 -- Text
 parse (T_Text str : xs)  = addP (Text str) <$> parse xs
 
@@ -73,17 +76,6 @@ parse (T_Blanks i : xs)  = addP (Text (replicate i ' ')) <$> parse xs
 parse tokens = error $ show tokens
 
 -- Hilfsfunktionen für den Parser
-
--- Standardmäßig werden Text, Leerzeichen, etc. in einem P gesammelt
--- in einem Header ist aber kein P, daher wird der P-Knoten hier wieder
--- entfernt.
-unP :: AST -> AST
-unP (Sequence [P asts]) = Sequence asts
-unP (Sequence (P ast : asts )) = Sequence (Sequence ast : asts)
-unP ast = ast
-
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
 
 -- check End
 modifyAst :: [Token] -> Maybe AST
@@ -110,8 +102,6 @@ replaceT tmpcontent =
         T_H i -> [T_Text (replicate i '#')] ++ replaceT (tail tmpcontent)
         T_Text str -> [test] ++ replaceT (tail tmpcontent)
         _ -> [test] ++ replaceT (tail tmpcontent)
-        
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Mehrere aufeinander folgende Texte, Blanks, etc. werden zu einem Absatz
 -- zusammengefügt.
@@ -126,3 +116,22 @@ addP text@(Text _) (Sequence (P ast2 : asts)) = Sequence (P (text : ast2) : asts
 addP text@(Text _) (Sequence ast) = Sequence (P [text] : ast)
 addP p (Sequence ast) = Sequence (p : ast)
 addP p ast = error $ show p ++ "\n" ++ show ast
+
+
+-- Standardmäßig werden Text, Leerzeichen, etc. in einem P gesammelt
+-- in einem Header ist aber kein P, daher wird der P-Knoten hier wieder
+-- entfernt.
+unP :: AST -> AST
+unP (Sequence [P asts]) = Sequence asts
+unP (Sequence (P ast : asts )) = Sequence (Sequence ast : asts)
+unP ast = ast
+
+--------------------------
+
+addICB :: AST -> AST -> AST
+
+addICB text@(Text _) (Sequence asts) = Sequence (ICB [text] : asts)
+addICB icb (Sequence asts) = Sequence (icb : asts)
+addICB icb ast = error $ show icb ++ "\n" ++ show ast
+
+
