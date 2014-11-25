@@ -45,19 +45,21 @@ parse (T_Newline:xs) =
 -- Das ergibt zusammen einen Header im AST, er wird einer Sequenz hinzugefügt.
 parse (T_H i : xs) =
     let (content, rest) = span (/= T_Newline) xs
+        eof = length rest > 0
     in case content of
-      [] ->
-        (\(Sequence ast) headerAst -> Sequence (H i (unP headerAst) : ast))
-         <$> parse (tail rest)
-         <*> modifyAst []
+        [] -> case eof of
+                True -> (\(Sequence ast) headerAst -> Sequence (H i (unP headerAst) : ast))
+                    <$> parse (tail rest)
+                    <*> modifyAst []
+                False -> parse []
       -- Zwischen den ### und dem Content muss mindestens ein Leerzeichen
       -- stehen
-      (T_Blanks _ : content') ->
-        (\(Sequence ast) headerAst -> Sequence (H i (unP headerAst) : ast))
-         <$> parse rest
-         <*> modifyAst content'
-      -- kein Leerzeichen == kein Header
-      _ -> addP (Text (replicate i '#')) <$> parse xs
+        (T_Blanks _ : content') ->
+            (\(Sequence ast) headerAst -> Sequence (H i (unP headerAst) : ast))
+            <$> parse rest
+            <*> modifyAst content'
+        -- kein Leerzeichen == kein Header
+        _ -> addP (Text (replicate i '#')) <$> parse xs
 
 ---------INDENDED CODE BLOCKS----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -90,7 +92,7 @@ modifyAst tmpcontent =
                     T_Blanks _ -> parse $ init (init $ replaceT tmpcontent)
                     T_Text _ -> parse (init $ replaceT tmpcontent ++ [T_Text (replicate i '#')])
                     _ -> parse $ init (replaceT tmpcontent)
-                _ -> parse tmpcontent
+                _ -> parse $ replaceT tmpcontent
         else parse tmpcontent
 
 

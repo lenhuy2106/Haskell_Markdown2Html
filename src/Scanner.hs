@@ -16,9 +16,8 @@ scan ""           = Just []
 scan ('\\' : '#' : xs) = let (escape, rest) = span (=='#') ('#' : xs)
     in (T_Text escape: ) <$> scan rest
 
-scan ('\\' : xs)    = (T_Text "\\" : )  <$> scan (tail xs)
-
 ---------INDENDED CODE BLOCKS----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+scan ('\\':xs)    = (T_Text "\\" : )  <$> scan xs
 
 -- four consecutive spaces
 scan str@(' ':' ':' ':' ' : _) =
