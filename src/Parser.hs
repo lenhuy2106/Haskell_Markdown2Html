@@ -90,7 +90,7 @@ modifyAst tmpcontent =
                     T_Text _ -> parse (init $ replaceT tmpcontent ++ [T_Text (replicate i '#')])
                     _ -> parse $ init (replaceT tmpcontent)
                 _ -> parse tmpcontent
-        else parse []
+        else parse tmpcontent
 
 
 replaceT :: [Token] -> [Token]
