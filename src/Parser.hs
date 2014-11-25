@@ -21,11 +21,15 @@ parse (T_Newline:T_Newline:xs) =
 
 -- Vier oder mehr Sterne werden als Token T_HorizontalLine erkannt und hier als HorizontalLine AST weitergegeben
 parse (T_HorizontalLine:xs) =
-        (\(Sequence ast)-> Sequence (HorizontalLine : ast))
+        (\(Sequence ast) -> Sequence (HorizontalLine : ast))
         <$> parse xs
-        
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+-- E26: ein Escapezeichen wird ignoriert und das folgende Zeichen als String gedeutet
+parse (T_EscapeChar:xs) =
+        parse xs
 
 
 -- einen einzelnen Zeilenumbruch ignorieren wir (TODO: aber nicht mehr bei
