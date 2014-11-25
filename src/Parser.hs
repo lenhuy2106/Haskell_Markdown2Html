@@ -32,7 +32,7 @@ parse (T_EscapeChar:xs) =
         parse xs
 
 
-
+-- NewLine before Header is ignored
 parse (T_Newline : T_H i : xs) =
     parse (T_H i : xs)
 
