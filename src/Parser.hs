@@ -32,10 +32,19 @@ parse (T_EscapeChar:xs) =
         parse xs
 
 
+
+parse (T_Newline : T_H i : xs) =
+    parse (T_H i : xs)
+
 -- einen einzelnen Zeilenumbruch ignorieren wir (TODO: aber nicht mehr bei
 -- z.B. Code Blocks!)
 parse (T_Newline:xs) =
         addP (Text "\n") <$> parse xs
+
+
+
+
+
 
 -- einem Header muss ein Text etc. bis zum Zeilenende folgen.
 -- Das ergibt zusammen einen Header im AST, er wird einer Sequenz hinzugefügt.
