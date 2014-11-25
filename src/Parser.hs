@@ -42,16 +42,16 @@ parse (T_Newline:xs) =
 parse (T_H i : xs) =
     let (content, rest) = span (/= T_Newline) xs
     in case content of
+      [] ->
+        (\(Sequence ast) headerAst -> Sequence (H i (unP headerAst) : ast))
+         <$> parse (tail rest)
+         <*> modifyAst []
       -- Zwischen den ### und dem Content muss mindestens ein Leerzeichen
       -- stehen
       (T_Blanks _ : content') ->
         (\(Sequence ast) headerAst -> Sequence (H i (unP headerAst) : ast))
          <$> parse rest
          <*> modifyAst content'
-      [] ->
-        (\(Sequence ast) headerAst -> Sequence (H i (unP headerAst) : ast))
-         <$> parse (tail rest)
-         <*> modifyAst []
       -- kein Leerzeichen == kein Header
       _ -> addP (Text (replicate i '#')) <$> parse xs
 
@@ -75,17 +75,33 @@ unP ast = ast
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+
 -- check End
 modifyAst :: [Token] -> Maybe AST
 modifyAst [] = parse []
 modifyAst tmpcontent = 
-    let lastT = last tmpcontent
-        --sndLastT = last !! ((length last) - 1)
-    in case lastT of
-        T_H _ -> parse $ init tmpcontent
-        _ -> parse tmpcontent
+    if length tmpcontent > 1
+        then
+            let lastT = last tmpcontent
+                sndLastT = tmpcontent !! ((length tmpcontent) - 2)
+            in case lastT of
+                T_H i -> case sndLastT of
+                    T_Blanks _ -> parse $ init (init $ replaceT tmpcontent)
+                    T_Text _ -> parse (init $ replaceT tmpcontent ++ [T_Text (replicate i '#')])
+                    _ -> parse $ init (replaceT tmpcontent)
+                _ -> parse tmpcontent
+        else parse []
 
 
+replaceT :: [Token] -> [Token]
+replaceT [] = []
+replaceT tmpcontent =
+    let (test:xs) = tmpcontent
+    in case test of
+        T_H i -> [T_Text (replicate i '#')] ++ replaceT (tail tmpcontent)
+        T_Text str -> [test] ++ replaceT (tail tmpcontent)
+        _ -> [test] ++ replaceT (tail tmpcontent)
+        
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Mehrere aufeinander folgende Texte, Blanks, etc. werden zu einem Absatz
