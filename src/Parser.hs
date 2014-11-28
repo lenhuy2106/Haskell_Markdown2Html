@@ -63,9 +63,19 @@ parse (T_H i : xs) =
 
 ---------INDENDED CODE BLOCKS----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+parse (T_IndCodeBlock : T_Text str : T_Newline : T_IndCodeBlock : T_Text str2 : xs) =
+    addICB (Text (str++"\n"))
+    <$> parse (T_IndCodeBlock : T_Text str2 : xs)
+
 parse (T_IndCodeBlock : T_Text str : xs) =
     addICB (Text str)
     <$> parse xs
+
+parse (T_IndCodeBlock : T_Newline : xs) = 
+    addICB (Text ('\n': []))
+    <$> parse xs
+
+ --   Sequence (ICB (ast1 ++ ast2) : asts)
 
 --------OTHERS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -132,8 +142,10 @@ unP ast = ast
 
 addICB :: AST -> AST -> AST
 
+addICB (ICB ast1) (Sequence (ICB ast2 : asts)) = Sequence (ICB (ast1 ++ ast2) : asts)
+addICB text@(Text _) (Sequence (ICB ast2 : asts)) = Sequence (ICB (text : ast2) : asts)
 addICB text@(Text _) (Sequence asts) = Sequence (ICB [text] : asts)
-addICB icb (Sequence asts) = Sequence (icb : asts)
+addICB icb (Sequence asts) = unP (Sequence (icb : asts)) -- unP ?
 addICB icb ast = error $ show icb ++ "\n" ++ show ast
 
 
