@@ -41,22 +41,25 @@ parse (T_Newline : T_H i : xs) =
 parse (T_Newline:xs) =
         addP (Text "\n") <$> parse xs
 
+
 -- einem Header muss ein Text etc. bis zum Zeilenende folgen.
 -- Das ergibt zusammen einen Header im AST, er wird einer Sequenz hinzugefügt.
 parse (T_H i : xs) =
-    let (content, rest) = span (/= T_Newline) xs
-        eof = length rest > 0
+    let (content, rest) = span (/= T_Newline) xs -- Span splittet vor! Newline, Weitergabe muss ohne geschehen. siehe unten
+        neof = length rest > 0
     in case content of
-        [] -> case eof of
+        [] -> case neof of
                 True -> (\(Sequence ast) headerAst -> Sequence (H i (unP headerAst) : ast))
                     <$> parse (tail rest)
                     <*> modifyAst []
-                False -> parse []
+                False -> (\(Sequence ast) headerAst -> Sequence (H i (unP headerAst) : ast))
+                    <$> parse []
+                    <*> modifyAst []
       -- Zwischen den ### und dem Content muss mindestens ein Leerzeichen
       -- stehen
         (T_Blanks _ : content') ->
             (\(Sequence ast) headerAst -> Sequence (H i (unP headerAst) : ast))
-            <$> parse rest
+            <$> parse (tail rest)
             <*> modifyAst content'
         -- kein Leerzeichen == kein Header
         _ -> addP (Text (replicate i '#')) <$> parse xs
@@ -82,6 +85,9 @@ parse (T_IndCodeBlock : T_Newline : xs) =
 -- Text
 parse (T_Text str : xs)  = addP (Text str) <$> parse xs
 
+-- Removes Trailing Spaces
+parse (T_Blanks i : T_Newline : xs) = parse (T_Newline : xs)
+
 -- Blanks werden hier wieder durch Leerzeichen ersetzt
 parse (T_Blanks i : xs)  = addP (Text (replicate i ' ')) <$> parse xs
 
@@ -99,9 +105,10 @@ modifyAst tmpcontent =
                 sndLastT = tmpcontent !! ((length tmpcontent) - 2)
             in case lastT of
                 T_H i -> case sndLastT of
-                    T_Blanks _ -> parse $ init (init $ replaceT tmpcontent)
-                    T_Text _ -> parse (init $ replaceT tmpcontent ++ [T_Text (replicate i '#')])
+                    T_Blanks _ -> parse (replaceT (init (init tmpcontent)))
+                    T_Text _ -> parse (init (replaceT tmpcontent) ++ [T_Text (replicate i '#')])
                     _ -> parse $ init (replaceT tmpcontent)
+                T_Blanks _ -> modifyAst (init tmpcontent)
                 _ -> parse $ replaceT tmpcontent
         else parse tmpcontent
 
