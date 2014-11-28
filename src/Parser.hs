@@ -46,7 +46,7 @@ parse (T_Newline:xs) =
 -- einem Header muss ein Text etc. bis zum Zeilenende folgen.
 -- Das ergibt zusammen einen Header im AST, er wird einer Sequenz hinzugefügt.
 parse (T_H i : xs) =
-    let (content, rest) = span (/= T_Newline) xs
+    let (content, rest) = span (/= T_Newline) xs -- Span splittet vor! Newline, Weitergabe muss ohne geschehen. siehe unten
         neof = length rest > 0
     in case content of
         [] -> case neof of
@@ -60,7 +60,7 @@ parse (T_H i : xs) =
       -- stehen
         (T_Blanks _ : content') ->
             (\(Sequence ast) headerAst -> Sequence (H i (unP headerAst) : ast))
-            <$> parse rest
+            <$> parse (tail rest)
             <*> modifyAst content'
         -- kein Leerzeichen == kein Header
         _ -> addP (Text (replicate i '#')) <$> parse xs
@@ -68,11 +68,11 @@ parse (T_H i : xs) =
 -- Text
 parse (T_Text str : xs)  = addP (Text str) <$> parse xs
 
+-- Removes Trailing Spaces
+parse (T_Blanks i : T_Newline : xs) = parse (T_Newline : xs)
+
 -- Blanks werden hier wieder durch Leerzeichen ersetzt
-parse (T_Blanks i : xs)  = 
-    if length xs > 0
-        then addP (Text (replicate i ' ')) <$> parse xs
-        else parse xs
+parse (T_Blanks i : xs)  = addP (Text (replicate i ' ')) <$> parse xs
 
 parse tokens = error $ show tokens
 
