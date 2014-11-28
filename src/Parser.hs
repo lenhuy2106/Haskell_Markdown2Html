@@ -43,20 +43,19 @@ parse (T_Newline:xs) =
 
 
 
-
-
-
 -- einem Header muss ein Text etc. bis zum Zeilenende folgen.
 -- Das ergibt zusammen einen Header im AST, er wird einer Sequenz hinzugefügt.
 parse (T_H i : xs) =
     let (content, rest) = span (/= T_Newline) xs
-        eof = length rest > 0
+        neof = length rest > 0
     in case content of
-        [] -> case eof of
+        [] -> case neof of
                 True -> (\(Sequence ast) headerAst -> Sequence (H i (unP headerAst) : ast))
                     <$> parse (tail rest)
                     <*> modifyAst []
-                False -> parse []
+                False -> (\(Sequence ast) headerAst -> Sequence (H i (unP headerAst) : ast))
+                    <$> parse []
+                    <*> modifyAst []
       -- Zwischen den ### und dem Content muss mindestens ein Leerzeichen
       -- stehen
         (T_Blanks _ : content') ->
@@ -70,7 +69,10 @@ parse (T_H i : xs) =
 parse (T_Text str : xs)  = addP (Text str) <$> parse xs
 
 -- Blanks werden hier wieder durch Leerzeichen ersetzt
-parse (T_Blanks i : xs)  = addP (Text (replicate i ' ')) <$> parse xs
+parse (T_Blanks i : xs)  = 
+    if length xs > 0
+        then addP (Text (replicate i ' ')) <$> parse xs
+        else parse xs
 
 parse tokens = error $ show tokens
 
@@ -97,9 +99,10 @@ modifyAst tmpcontent =
                 sndLastT = tmpcontent !! ((length tmpcontent) - 2)
             in case lastT of
                 T_H i -> case sndLastT of
-                    T_Blanks _ -> parse $ init (init $ replaceT tmpcontent)
-                    T_Text _ -> parse (init $ replaceT tmpcontent ++ [T_Text (replicate i '#')])
+                    T_Blanks _ -> parse (replaceT (init (init tmpcontent)))
+                    T_Text _ -> parse (init (replaceT tmpcontent) ++ [T_Text (replicate i '#')])
                     _ -> parse $ init (replaceT tmpcontent)
+                T_Blanks _ -> modifyAst (init tmpcontent)
                 _ -> parse $ replaceT tmpcontent
         else parse tmpcontent
 
