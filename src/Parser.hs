@@ -87,10 +87,11 @@ parse (T_IndCodeBlock : xs) =
                 T_Newline        -> let (newlinesT, otherT) = span (==T_Newline) rest
                                         m = length newlinesT
                                         firstT = head otherT
-                                    in if firstT /= T_IndCodeBlock
-                                        then parse rest
-                                        else    addICB (Text "\n")
-                                                <$> parse (T_IndCodeBlock : rest)
+                                    in case firstT of
+                                        T_Blanks b ->       parse (T_IndCodeBlock : T_Text "\n" : otherT)    
+                                        T_IndCodeBlock ->   addICB (Text "\n")
+                                                            <$> parse (T_IndCodeBlock : rest)
+                                        _ ->                parse rest
                 _                -> parse xs
         else parse xs
 
