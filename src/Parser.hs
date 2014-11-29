@@ -179,9 +179,9 @@ unP ast = ast
 
 addICB :: AST -> AST -> AST
 
-addICB (ICB ast1) (Sequence (ICB ast2 : asts)) = Sequence (ICB (ast1 ++ ast2) : asts)
-addICB text@(Text _) (Sequence (ICB ast2 : asts)) = Sequence (ICB (text : ast2) : asts)
-addICB text@(Text _) (Sequence asts) = Sequence (ICB [text] : asts)
+addICB (CB ast1) (Sequence (CB ast2 : asts)) = Sequence (CB (ast1 ++ ast2) : asts)
+addICB text@(Text _) (Sequence (CB ast2 : asts)) = Sequence (CB (text : ast2) : asts)
+addICB text@(Text _) (Sequence asts) = Sequence (CB [text] : asts)
 addICB icb (Sequence asts) = unP (Sequence (icb : asts)) -- unP ?
 addICB icb ast = error $ show icb ++ "\n" ++ show ast
 
