@@ -19,7 +19,12 @@ parse (T_Newline:T_Newline:xs) =
         (\(Sequence ast) -> Sequence (Emptyline : ast))
         <$> parse xs
 
+    
+---------BLANK LINES AT END-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+parse (T_Newline : T_Blanks b : []) =
+    parse []
+    
 ---------HORIZONTAL LINE----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Vier oder mehr Sterne werden als Token T_HorizontalLine erkannt und hier als HorizontalLine AST weitergegeben
