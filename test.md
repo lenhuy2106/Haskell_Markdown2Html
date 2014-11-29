@@ -1,7 +1,2 @@
-    chunk1
-
-    chunk2
-  
- 
- 
-    chunk3
+Foo
+    bar

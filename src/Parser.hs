@@ -72,6 +72,10 @@ parse (T_H i : xs) =
 --    addICB (Text str)
 --    <$> parse xs
 
+-- ICB unterbricht kein P
+parse (T_Text str : T_Newline : T_IndCodeBlock : xs) =
+    parse (T_Text str : T_Text ("\n") : xs)    
+
 parse (T_IndCodeBlock : xs) = 
     if xs /= []
         then
