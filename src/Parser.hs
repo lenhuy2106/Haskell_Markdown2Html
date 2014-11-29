@@ -66,15 +66,12 @@ parse (T_H i : xs) =
         -- kein Leerzeichen == kein Header
         _ -> addP (Text (replicate i '#')) <$> parse xs
 
----------INDENDED CODE BLOCKS----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
--- parse (T_IndCodeBlock : T_Text str : xs) =
---    addICB (Text str)
---    <$> parse xs
+---------INDENDED CODE BLOCKS----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- ICB unterbricht kein P
 parse (T_Text str : T_Newline : T_IndCodeBlock : xs) =
-    parse (T_Text str : T_Text ("\n") : xs)    
+    parse (T_Text str : T_Text ("\n") : xs)
 
 parse (T_IndCodeBlock : xs) = 
     if xs /= []
@@ -87,15 +84,24 @@ parse (T_IndCodeBlock : xs) =
                 T_Blanks n       -> addICB (Text (replicate n ' '))
                                     <$> parse (T_IndCodeBlock : rest)
                 T_IndCodeBlock   -> parse (T_IndCodeBlock : rest)
-                T_Newline        -> addICB (Text "\n")
-                                    <$> parse (T_IndCodeBlock : rest)
+                T_Newline        -> let (newlinesT, otherT) = span (==T_Newline) rest
+                                        m = length newlinesT
+                                        firstT = head otherT
+                                    in if firstT /= T_IndCodeBlock
+                                        then parse rest
+                                        else    addICB (Text "\n")
+                                                <$> parse (T_IndCodeBlock : rest)
                 _                -> parse xs
         else parse xs
 
  --  Sequence (ICB (ast1 ++ ast2) : asts)
  -- (newlines, rest) = span (== T_Newline) xs
  -- T_Text ("DEBUG")
- 
+
+ --  let (escape, rest) = span (=='#') ('#' : xs)
+ --  in (T_Text escape: ) <$> scan rest
+
+
 --------OTHERS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Text
@@ -107,7 +113,9 @@ parse (T_Blanks i : T_Newline : xs) = parse (T_Newline : xs)
 -- Blanks werden hier wieder durch Leerzeichen ersetzt
 parse (T_Blanks i : xs)  = addP (Text (replicate i ' ')) <$> parse xs
 
+
 parse tokens = error $ show tokens
+
 
 -- Hilfsfunktionen für den Parser
 

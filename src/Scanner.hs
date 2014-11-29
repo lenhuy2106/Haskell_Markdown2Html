@@ -29,7 +29,7 @@ scan str@('\n':' ':' ':' ':' ' : _) =
            n = length chunk - 4
            in (T_Newline : )
            <$> (T_IndCodeBlock : )
-           <$> (T_Text (replicate n ' ') : )  -- add additional spaces
+           <$> (T_Blanks n : )  -- add additional spaces
            <$> scan rest
 
 --------NEWLINE-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
