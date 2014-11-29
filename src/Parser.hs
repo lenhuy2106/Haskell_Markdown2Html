@@ -4,6 +4,9 @@ module Parser ( parse {- nur parse exportieren -} )
 import           Control.Applicative ((<$>), (<*>))
 import           IR
 
+-- TODO: zusätzl newline am anfang parsen
+
+
 -- Der Parser versucht aus einer Liste von Token einen AST zu erzeugen
 parse :: [Token] -> Maybe AST
 
@@ -39,8 +42,7 @@ parse (T_Newline : T_H i : xs) =
 -- einen einzelnen Zeilenumbruch ignorieren wir (TODO: aber nicht mehr bei
 -- z.B. Code Blocks!)
 parse (T_Newline:xs) =
-        addP (Text "\n") <$> parse xs
-
+        parse xs -- addP (Text "\n") <$> parse xs
 
 -- einem Header muss ein Text etc. bis zum Zeilenende folgen.
 -- Das ergibt zusammen einen Header im AST, er wird einer Sequenz hinzugefügt.
@@ -70,25 +72,29 @@ parse (T_IndCodeBlock : T_Text str : T_Newline : T_IndCodeBlock : T_Text str2 : 
     addICB (Text (str++"\n"))
     <$> parse (T_IndCodeBlock : T_Text str2 : xs)
 
-parse (T_IndCodeBlock : T_Text str : xs) =
-    addICB (Text str)
-    <$> parse xs
+-- parse (T_IndCodeBlock : T_Text str : xs) =
+--    addICB (Text str)
+--    <$> parse xs
 
-parse (T_IndCodeBlock : T_Text str : T_Newline : xs) = 
-    let (newlines, rest) = span (== T_Newline) xs
-        n = length newlines
-        first = head rest
-        second = rest !! 2
-    in case first of
-        T_IndCodeBlock   -> case second of
-                                T_Text str2 ->  addICB (Text ((replicate n '\n') ++ str2))
-                                                <$> parse (tail rest)
-                                _           ->  parse rest
-        _                -> parse rest
-
+parse (T_IndCodeBlock : xs) = 
+    if xs /= []
+        then
+            let first = head xs
+                second = xs !! 2
+                rest = tail xs
+            in case first of
+                T_Text str       -> addICB (Text str)
+                                    <$> parse (T_IndCodeBlock : rest)
+                T_IndCodeBlock   -> parse (T_IndCodeBlock : rest)
+                T_Newline        -> addICB (Text "\n")
+                                    <$> parse (T_IndCodeBlock : rest)
+                _                -> parse xs
+        else parse xs
 
  --  Sequence (ICB (ast1 ++ ast2) : asts)
-
+ -- (newlines, rest) = span (== T_Newline) xs
+ -- T_Text ("DEBUG")
+ 
 --------OTHERS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Text
