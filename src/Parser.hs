@@ -66,7 +66,7 @@ parse (T_H i : xs) =
       -- stehen
         (T_Blanks _ : content') ->
             (\(Sequence ast) headerAst -> Sequence (H i (unP headerAst) : ast))
-            <$> parse (tail rest)
+            <$> parse rest  -- FIXED: parse (tail rest)
             <*> modifyAst content'
         -- kein Leerzeichen == kein Header
         _ -> addP (Text (replicate i '#')) <$> parse xs
@@ -81,7 +81,7 @@ parse (T_Text str : T_Newline : T_IndCodeBlock : xs) =
 parse (T_IndCodeBlock : xs) = 
     if xs /= []
         then
-            let first = head xs
+            let first = head xs         -- folgendes Token
                 rest = tail xs
             in case first of
                 T_Text str       -> addICB (Text str)
@@ -89,11 +89,11 @@ parse (T_IndCodeBlock : xs) =
                 T_Blanks n       -> addICB (Text (replicate n ' '))
                                     <$> parse (T_IndCodeBlock : rest)
                 T_IndCodeBlock   -> parse (T_IndCodeBlock : rest)
+                -- newline: ist nach allen newlines ein gültiges ICB ende?
                 T_Newline        -> let (newlinesT, otherT) = span (==T_Newline) rest
-                                        m = length newlinesT
                                         firstT = head otherT
-                                    in case firstT of
-                                        T_Blanks b ->       parse (T_IndCodeBlock : T_Text "\n" : otherT)    
+                                    in case firstT of              -- wenn gültiges ende
+                                        T_Blanks b ->       parse (T_IndCodeBlock : T_Text "\n" : otherT)
                                         T_IndCodeBlock ->   addICB (Text "\n")
                                                             <$> parse (T_IndCodeBlock : rest)
                                         _ ->                parse rest
