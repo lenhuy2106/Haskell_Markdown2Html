@@ -1,7 +1,2 @@
 ICB:
-    - newlines in codeblöcken bleiben erhalten, obwohl danach kein icb mehr folgt
-    
-                        --------------fefef
-
-
-                        ## fef
+    - E:69
