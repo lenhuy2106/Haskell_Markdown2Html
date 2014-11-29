@@ -80,6 +80,8 @@ parse (T_IndCodeBlock : xs) =
             in case first of
                 T_Text str       -> addICB (Text str)
                                     <$> parse (T_IndCodeBlock : rest)
+                T_Blanks n       -> addICB (Text (replicate n ' '))
+                                    <$> parse (T_IndCodeBlock : rest)
                 T_IndCodeBlock   -> parse (T_IndCodeBlock : rest)
                 T_Newline        -> addICB (Text "\n")
                                     <$> parse (T_IndCodeBlock : rest)
