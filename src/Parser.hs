@@ -76,7 +76,6 @@ parse (T_IndCodeBlock : xs) =
     if xs /= []
         then
             let first = head xs
-                second = xs !! 2
                 rest = tail xs
             in case first of
                 T_Text str       -> addICB (Text str)
