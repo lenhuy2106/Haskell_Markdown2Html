@@ -26,9 +26,11 @@ scan ('\\':xs)    =
 scan str@('\n':' ':' ':' ':' ' : _) =
     let (newline, block) = span(=='\n') str
     in let (chunk, rest) = span (==' ') block
+           n = length chunk - 4
            in (T_Newline : )
            <$> (T_IndCodeBlock : )
-           <$> scan rest -- add text chunk
+           <$> (T_Text (replicate n ' ') : )  -- add additional spaces
+           <$> scan rest
 
 --------NEWLINE-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 

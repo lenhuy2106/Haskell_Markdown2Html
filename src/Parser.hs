@@ -68,10 +68,6 @@ parse (T_H i : xs) =
 
 ---------INDENDED CODE BLOCKS----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-parse (T_IndCodeBlock : T_Text str : T_Newline : T_IndCodeBlock : T_Text str2 : xs) =
-    addICB (Text (str++"\n"))
-    <$> parse (T_IndCodeBlock : T_Text str2 : xs)
-
 -- parse (T_IndCodeBlock : T_Text str : xs) =
 --    addICB (Text str)
 --    <$> parse xs
