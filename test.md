@@ -1,3 +1,7 @@
+    chunk1
 
-     a simple
-      indented code block
+    chunk2
+  
+ 
+ 
+    chunk3
