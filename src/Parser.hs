@@ -74,11 +74,20 @@ parse (T_IndCodeBlock : T_Text str : xs) =
     addICB (Text str)
     <$> parse xs
 
-parse (T_IndCodeBlock : T_Newline : xs) = 
-    addICB (Text ('\n': []))
-    <$> parse xs
+parse (T_IndCodeBlock : T_Text str : T_Newline : xs) = 
+    let (newlines, rest) = span (== T_Newline) xs
+        n = length newlines
+        first = head rest
+        second = rest !! 2
+    in case first of
+        T_IndCodeBlock   -> case second of
+                                T_Text str2 ->  addICB (Text ((replicate n '\n') ++ str2))
+                                                <$> parse (tail rest)
+                                _           ->  parse rest
+        _                -> parse rest
 
- --   Sequence (ICB (ast1 ++ ast2) : asts)
+
+ --  Sequence (ICB (ast1 ++ ast2) : asts)
 
 --------OTHERS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -154,5 +163,4 @@ addICB text@(Text _) (Sequence (ICB ast2 : asts)) = Sequence (ICB (text : ast2) 
 addICB text@(Text _) (Sequence asts) = Sequence (ICB [text] : asts)
 addICB icb (Sequence asts) = unP (Sequence (icb : asts)) -- unP ?
 addICB icb ast = error $ show icb ++ "\n" ++ show ast
-
 
