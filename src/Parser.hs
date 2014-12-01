@@ -115,18 +115,20 @@ parse (T_IndCodeBlock : xs) =
 
 ---------CODE SPAN-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-parse ((T_MaybeCS cs) : x : xs) =
+parse ((T_MaybeCS n cs) : x : xs) =
     if x:xs /= []
         then
             case x of
                 -- maybe CS
-                T_Text str      ->  parse ((T_MaybeCS (cs ++ [x])) : xs)
-                T_Blanks b      ->  parse ((T_MaybeCS (cs ++ [x])) : xs)
-                T_Newline       ->  parse ((T_MaybeCS (cs ++ [x])) : xs)
+                T_Text str      ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
+                T_Blanks b      ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
+                T_Newline       ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
                 -- yes CS
-                T_MaybeCS []    ->  parse (T_CodeSpan : (cs ++ [x] ++ xs))
+                T_MaybeCS m []    -> if (n == m) 
+                                        then parse (T_CodeSpan : (cs ++ [x] ++ xs))
+                                        else parse ([T_Text (replicate n '`')] ++ cs ++ [x] ++ xs) -- not same tags
                 -- no CS
-                _               ->  parse ([T_Text "`"] ++ cs ++ [x] ++ xs)
+                _               ->  parse ([T_Text (replicate n '`')] ++ cs ++ [x] ++ xs)
         else parse (x:xs)
 
 parse (T_CodeSpan : x : xs) =

@@ -7,7 +7,7 @@ data Token = T_Newline          -- '\n'
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
            | T_HorizontalLine   -- Blanks mit Anzahl
            | T_IndCodeBlock     -- Eingerückter Code Block
-           | T_MaybeCS [Token]
+           | T_MaybeCS Int [Token]
            | T_CodeSpan
            | T_End
     deriving (Show, Eq)
