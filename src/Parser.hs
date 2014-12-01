@@ -24,6 +24,9 @@ parse (T_Newline:T_Newline:xs) =
 
 parse (T_Newline : T_Blanks b : []) =
     parse []
+
+parse (T_End : []) =
+    parse []
     
 ---------HORIZONTAL LINE----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -43,6 +46,9 @@ parse (T_HorizontalLine:xs) =
 -- NewLine vor einem Header wird ignoriert
 parse (T_Newline : T_H i : xs) =
     parse (T_H i : xs)
+
+parse (T_Text str : T_Newline: T_Text str2 : xs) =
+    addP (Text (str ++ "\n" ++ str2)) <$> parse xs
 
 -- einen einzelnen Zeilenumbruch ignorieren wir (TODO: aber nicht mehr bei
 -- z.B. Code Blocks!)
@@ -84,9 +90,9 @@ parse (T_IndCodeBlock : xs) =
             let first = head xs         -- folgendes Token
                 rest = tail xs
             in case first of
-                T_Text str       -> addICB (Text str)
+                T_Text str       -> addCB (Text str)
                                     <$> parse (T_IndCodeBlock : rest)
-                T_Blanks n       -> addICB (Text (replicate n ' '))
+                T_Blanks n       -> addCB (Text (replicate n ' '))
                                     <$> parse (T_IndCodeBlock : rest)
                 T_IndCodeBlock   -> parse (T_IndCodeBlock : rest)
                 -- newline: ist nach allen newlines ein gültiges ICB ende?
@@ -94,7 +100,7 @@ parse (T_IndCodeBlock : xs) =
                                         firstT = head otherT
                                     in case firstT of              -- wenn gültiges ende
                                         T_Blanks b ->       parse (T_IndCodeBlock : T_Text "\n" : otherT)
-                                        T_IndCodeBlock ->   addICB (Text "\n")
+                                        T_IndCodeBlock ->   addCB (Text "\n")
                                                             <$> parse (T_IndCodeBlock : rest)
                                         _ ->                parse rest
                 _                -> parse xs
@@ -107,6 +113,31 @@ parse (T_IndCodeBlock : xs) =
  --  let (escape, rest) = span (=='#') ('#' : xs)
  --  in (T_Text escape: ) <$> scan rest
 
+---------CODE SPAN-------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+parse ((T_MaybeCS cs) : x : xs) =
+    if x:xs /= []
+        then
+            case x of
+                -- maybe CS
+                T_Text str      ->  parse ((T_MaybeCS (cs ++ [x])) : xs)
+                T_Blanks b      ->  parse ((T_MaybeCS (cs ++ [x])) : xs)
+                T_Newline       ->  parse ((T_MaybeCS (cs ++ [x])) : xs)
+                -- yes CS
+                T_MaybeCS []    ->  parse (T_CodeSpan : (cs ++ [x] ++ xs))
+                -- no CS
+                _               ->  parse ([T_Text "`"] ++ cs ++ [x] ++ xs)
+        else parse (x:xs)
+
+parse (T_CodeSpan : x : xs) =
+    if xs /= []
+        then
+            case x of
+                T_Text str  ->      addCB (Text str) <$> parse (T_CodeSpan : xs)
+                T_Blanks b  ->      addCB (Text (replicate b ' ')) <$> parse (T_CodeSpan : xs)
+                T_Newline   ->      addCB (Text ("\n")) <$> parse (T_CodeSpan : xs)
+                _           ->      parse xs
+        else parse xs
 
 --------OTHERS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -177,11 +208,11 @@ unP ast = ast
 
 --------------------------
 
-addICB :: AST -> AST -> AST
+addCB :: AST -> AST -> AST
 
-addICB (CB ast1) (Sequence (CB ast2 : asts)) = Sequence (CB (ast1 ++ ast2) : asts)
-addICB text@(Text _) (Sequence (CB ast2 : asts)) = Sequence (CB (text : ast2) : asts)
-addICB text@(Text _) (Sequence asts) = Sequence (CB [text] : asts)
-addICB icb (Sequence asts) = unP (Sequence (icb : asts)) -- unP ?
-addICB icb ast = error $ show icb ++ "\n" ++ show ast
+addCB (CB ast1) (Sequence (CB ast2 : asts)) = Sequence (CB (ast1 ++ ast2) : asts)
+addCB text@(Text _) (Sequence (CB ast2 : asts)) = Sequence (CB (text : ast2) : asts)
+addCB text@(Text _) (Sequence asts) = Sequence (CB [text] : asts)
+addCB cb (Sequence asts) = unP (Sequence (cb : asts)) -- unP ?
+addCB cb ast = error $ show cb ++ "\n" ++ show ast
 

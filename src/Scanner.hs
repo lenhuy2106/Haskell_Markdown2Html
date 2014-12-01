@@ -7,7 +7,7 @@ import           IR                  (Token (..))
 scan :: String -> Maybe [Token]
 
 -- ist der Eingabestrom zuende, ist es die Rekursion auch
-scan ""           = Just []
+scan ""           = Just (T_End : []) -- ADDED END TOKEN
 
 
 
@@ -35,7 +35,7 @@ scan str@('\n':' ':' ':' ':' ' : _) =
 ---------CODE SPAN-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 scan ('`' : xs) =
-    (T_IndCodeBlock : )
+    (T_MaybeCS [] : )
     <$> scan xs
 
 --------NEWLINE-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -73,5 +73,5 @@ scan str@('*' : _) =
 
 -- Text ohne die vorher erkannten Zeichen
 scan str          =
-    let (text, rest) = span (`notElem` "# \n") str
+    let (text, rest) = span (`notElem` "# \n `") str
     in (T_Text text : ) <$> scan rest
