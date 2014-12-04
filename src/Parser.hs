@@ -37,7 +37,6 @@ parse (T_HorizontalLine:xs) =
 
 ---------HEADER----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-
 -- E26: ein Escapezeichen wird ignoriert und das folgende Zeichen als String gedeutet
 -- parse (T_EscapeChar:xs) =
 --         parse xs
@@ -80,6 +79,8 @@ parse (T_H i : xs) =
 
 ---------INDENDED CODE BLOCKS----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+-- LLv1
+
 -- ICB unterbricht kein P
 parse (T_Text str : T_Newline : T_IndCodeBlock : xs) =
     parse (T_Text str : T_Text ("\n") : xs)
@@ -115,6 +116,8 @@ parse (T_IndCodeBlock : xs) =
 
 ---------CODE SPAN-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+-- LLv2
+
 parse ((T_MaybeCS n cs) : x : xs) =
     if x:xs /= []
         then
@@ -124,13 +127,14 @@ parse ((T_MaybeCS n cs) : x : xs) =
                 T_Blanks b      ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
                 T_Newline       ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
                 -- yes CS
-                T_MaybeCS m []    -> if (n == m) 
+                T_MaybeCS m []  -> if (n == m)
                                         then parse (T_CodeSpan : (cs ++ [x] ++ xs))
                                         else parse ([T_Text (replicate n '`')] ++ cs ++ [x] ++ xs) -- not same tags
                 -- no CS
                 _               ->  parse ([T_Text (replicate n '`')] ++ cs ++ [x] ++ xs)
         else parse (x:xs)
 
+-- if yes CS
 parse (T_CodeSpan : x : xs) =
     if xs /= []
         then
@@ -138,6 +142,57 @@ parse (T_CodeSpan : x : xs) =
                 T_Text str  ->      addCB (Text str) <$> parse (T_CodeSpan : xs)
                 T_Blanks b  ->      addCB (Text (replicate b ' ')) <$> parse (T_CodeSpan : xs)
                 T_Newline   ->      addCB (Text ("\n")) <$> parse (T_CodeSpan : xs)
+                _           ->      parse xs
+        else parse xs
+
+---------EMPHASIS-------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-- LLv3
+
+-- lookahead pivot stack xs yes no
+parse (T_MaybeStarEM : xs) =
+    if xs /= []
+        then
+            lookahead T_MaybeStarEM [] xs [T_EM] [(T_Text "*")]
+        else parse xs
+
+parse (T_MaybeStarST : xs) =
+    if xs /= []
+        then
+            lookahead T_MaybeStarST [] xs [T_ST] [(T_Text "*")]
+        else parse xs
+
+parse (T_MaybeLineEM : xs) =
+    if xs /= []
+        then
+            lookahead T_MaybeLineEM [] xs [T_EM] [(T_Text "*")]
+        else parse xs
+
+parse (T_MaybeLineST : xs) =
+    if xs /= []
+        then
+            lookahead T_MaybeLineST [] xs [T_ST] [(T_Text "*")]
+        else parse xs
+
+-- if yes EM
+parse (T_EM : x : xs) =
+    if xs /= []
+        then
+            case x of
+                T_Text str  ->      addEM (Text str) <$> parse (T_EM : xs)
+                T_Blanks b  ->      addEM (Text (replicate b ' ')) <$> parse (T_EM : xs)
+                T_Newline   ->      addEM (Text ("\n")) <$> parse (T_EM : xs)
+                _           ->      parse xs
+        else parse xs
+
+-- if yes STRNG
+parse (T_ST : x : xs) =
+    if xs /= []
+        then
+            case x of
+                T_Text str  ->      addSTRNG (Text str) <$> parse (T_ST : xs)
+                T_Blanks b  ->      addSTRNG (Text (replicate b ' ')) <$> parse (T_ST : xs)
+                T_Newline   ->      addSTRNG (Text ("\n")) <$> parse (T_ST : xs)
                 _           ->      parse xs
         else parse xs
 
@@ -211,10 +266,36 @@ unP ast = ast
 --------------------------
 
 addCB :: AST -> AST -> AST
-
 addCB (CB ast1) (Sequence (CB ast2 : asts)) = Sequence (CB (ast1 ++ ast2) : asts)
 addCB text@(Text _) (Sequence (CB ast2 : asts)) = Sequence (CB (text : ast2) : asts)
 addCB text@(Text _) (Sequence asts) = Sequence (CB [text] : asts)
 addCB cb (Sequence asts) = unP (Sequence (cb : asts)) -- unP ?
 addCB cb ast = error $ show cb ++ "\n" ++ show ast
+		
+addEM :: AST -> AST -> AST
+addEM (EM ast1) (Sequence (EM ast2 : asts)) = Sequence (EM (ast1 ++ ast2) : asts)
+addEM text@(Text _) (Sequence (EM ast2 : asts)) = Sequence (EM (text : ast2) : asts)
+addEM text@(Text _) (Sequence asts) = Sequence (EM [text] : asts)
+addEM em (Sequence asts) = unP (Sequence (em : asts)) -- unP ?
+addEM em ast = error $ show em ++ "\n" ++ show ast
 
+addSTRNG :: AST -> AST -> AST
+addSTRNG (STRNG ast1) (Sequence (STRNG ast2 : asts)) = Sequence (STRNG (ast1 ++ ast2) : asts)
+addSTRNG text@(Text _) (Sequence (EM ast2 : asts)) = Sequence (STRNG (text : ast2) : asts)
+addSTRNG text@(Text _) (Sequence asts) = Sequence (STRNG [text] : asts)
+addSTRNG strng (Sequence asts) = unP (Sequence (strng : asts)) -- unP ?
+addSTRNG strng ast = error $ show strng ++ "\n" ++ show ast
+
+----------------------------
+
+lookahead :: Token -> [Token] -> [Token] -> [Token] -> [Token] -> Maybe AST
+lookahead pivot stack (x:xs) yes no =
+        case x of
+                -- maybe EM
+                T_Text str          ->  lookahead pivot (stack++[x]) xs yes no -- pivot (stack ++ [x])
+                T_Blanks b          ->  lookahead pivot (stack++[x]) xs yes no
+                T_Newline           ->  lookahead pivot (stack++[x]) xs yes no
+                -- yes EM
+                pivot               -> parse (yes ++ stack ++ [x] ++ xs)
+                -- no EM
+                _                   ->  parse (no ++ stack ++ [x] ++ xs)

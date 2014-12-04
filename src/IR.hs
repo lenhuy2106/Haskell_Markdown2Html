@@ -9,6 +9,12 @@ data Token = T_Newline          -- '\n'
            | T_IndCodeBlock     -- Eingerückter Code Block
            | T_MaybeCS Int [Token]
            | T_CodeSpan
+           | T_MaybeStarEM      -- Emphasis mit tag
+           | T_MaybeStarST
+           | T_MaybeLineEM
+           | T_MaybeLineST
+           | T_EM
+           | T_ST
            | T_End
     deriving (Show, Eq)
 
@@ -21,5 +27,7 @@ data AST = Sequence [AST]   -- eine Sequenz von HTML-Elementen
          | Emptyline        -- eine leere Zeile
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
          | HorizontalLine   -- eine Horizontale Trennlinie
-         | CB [AST]     -- Eingerückter Code Block
+         | CB [AST]         -- Code Block
+         | EM [AST]         -- Emphasis
+         | STRNG [AST]      -- Strong Emphasis
     deriving (Eq, Show)

@@ -28,5 +28,9 @@ generateHTML' (Sequence as) =
 generateHTML' HorizontalLine = "<hr />"
 generateHTML' (CB ast) =
     "<pre><code>" ++ concatMap generateHTML' ast ++ "\n</code></pre>\n"
+generateHTML' (EM ast) =
+    "<em>" ++ concatMap generateHTML' ast ++ "\n</em>\n"
+generateHTML' (STRNG ast) =
+    "<strong>" ++ concatMap generateHTML' ast ++ "\n</strong>\n"
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 generateHTML' _ = ""

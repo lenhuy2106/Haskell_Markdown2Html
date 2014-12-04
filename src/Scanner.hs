@@ -40,6 +40,26 @@ scan ('`' : xs) =
     in (T_MaybeCS n [] : )
     <$> scan rest
 
+---------EMPHASIS-------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+scan ('*': '*' : xs) =
+    (T_MaybeStarST : )
+    <$> scan xs
+
+scan ('*' : xs) =
+    (T_MaybeStarEM : )
+    <$> scan xs
+
+
+scan ('_': '_' : xs) =
+    (T_MaybeLineST : )
+    <$> scan xs
+
+scan ('_' : xs) =
+    (T_MaybeLineEM : )
+    <$> scan xs
+
+
 --------NEWLINE-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- ein newLine escape
@@ -75,5 +95,5 @@ scan str@('*' : _) =
 
 -- Text ohne die vorher erkannten Zeichen
 scan str          =
-    let (text, rest) = span (`notElem` "# \n `") str
+    let (text, rest) = span (`notElem` "# \n ` *") str
     in (T_Text text : ) <$> scan rest
