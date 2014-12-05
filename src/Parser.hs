@@ -205,7 +205,7 @@ parse (T_Text str : xs)  = addP (P [(Text str)]) <$> parse xs
 parse (T_Blanks i : T_Newline : xs) = parse (T_Newline : xs)
 
 -- Blanks werden hier wieder durch Leerzeichen ersetzt
-parse (T_Blanks i : xs)  = addP (Text (replicate i ' ')) <$> parse xs
+parse (T_Blanks i : xs)  = addP (P[Text (replicate i ' ')]) <$> parse xs
 
 
 parse tokens = error $ show tokens
@@ -256,7 +256,7 @@ addP text@(Text _) (Sequence (P ast2 : asts)) = Sequence (P (text : ast2) : asts
 -- Andernfalls bleibt der Absatz alleine und wird vorne in die Sequence
 -- eingefügt
 addP text@(Text _) (Sequence ast) = Sequence (P [text] : ast)
-addP text@(EM em) (Sequence ast) = Sequence (P [text] : ast)
+-- addP text@(EM em) (Sequence ast) = Sequence (P [text] : ast)
 addP p (Sequence ast) = Sequence (p : ast)
 addP p ast = error $ show p ++ "\n" ++ show ast
 
