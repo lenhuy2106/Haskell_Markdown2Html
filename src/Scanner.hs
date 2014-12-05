@@ -95,5 +95,5 @@ scan str@('*' : _) =
 
 -- Text ohne die vorher erkannten Zeichen
 scan str          =
-    let (text, rest) = span (`notElem` "# \n ` *") str
+    let (text, rest) = span (`notElem` "# \n ` * _") str
     in (T_Text text : ) <$> scan rest

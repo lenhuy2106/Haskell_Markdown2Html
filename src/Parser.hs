@@ -182,7 +182,7 @@ parse (T_EM : x : xs) =
                 T_Text str  ->      addEM (Text str) <$> parse (T_EM : xs)
                 T_Blanks b  ->      addEM (Text (replicate b ' ')) <$> parse (T_EM : xs)
                 T_Newline   ->      addEM (Text ("\n")) <$> parse (T_EM : xs)
-                _           ->      parse (x:xs)
+                _           ->      parse xs
         else parse xs
 
 -- if yes STRNG
@@ -193,7 +193,7 @@ parse (T_ST : x : xs) =
                 T_Text str  ->      addSTRNG (Text str) <$> parse (T_ST : xs)
                 T_Blanks b  ->      addSTRNG (Text (replicate b ' ')) <$> parse (T_ST : xs)
                 T_Newline   ->      addSTRNG (Text ("\n")) <$> parse (T_ST : xs)
-                _           ->      parse (x:xs)
+                _           ->      parse xs
         else parse xs
 
 --------OTHERS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -289,13 +289,15 @@ addSTRNG strng ast = error $ show strng ++ "\n" ++ show ast
 ----------------------------
 
 lookahead :: Token -> [Token] -> [Token] -> [Token] -> [Token] -> Maybe AST
-lookahead pivot stack (x:xs) yes no =
-        case x of
-                -- maybe
-                T_Text str          ->  lookahead pivot (stack++[x]) xs yes no -- pivot (stack ++ [x])
-                T_Blanks b          ->  lookahead pivot (stack++[x]) xs yes no
-                T_Newline           ->  lookahead pivot (stack++[x]) xs yes no
+lookahead pivot stack (x:xs) yes no
+                | x == a       =  lookahead pivot (stack++[x]) xs yes no -- where clause
                 -- yes
-                pivot               ->  parse (yes ++ stack ++ [x] ++ xs)
+                | x == pivot   =  parse (yes ++ stack ++ [x] ++ xs)
                 -- no
-                _                   ->  parse (no ++ stack ++ [x] ++ xs)
+                | otherwise    =  parse (no ++ stack ++ [x] ++ xs)
+                    -- translate pattern to value
+                where a = case x of
+                            T_Text str      ->  T_Text str
+                            T_Newline       ->  T_Newline
+                            T_Blanks b      ->  T_Blanks b
+                            _               ->  T_End
