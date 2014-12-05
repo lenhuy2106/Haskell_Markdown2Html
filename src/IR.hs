@@ -28,6 +28,7 @@ data AST = Sequence [AST]   -- eine Sequenz von HTML-Elementen
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
          | HorizontalLine   -- eine Horizontale Trennlinie
          | CB [AST]         -- Code Block
+         | CS [AST]         -- Code Span
          | EM [AST]         -- Emphasis
          | ST [AST]      -- Strong Emphasis
     deriving (Eq, Show)

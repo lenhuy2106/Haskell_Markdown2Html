@@ -140,9 +140,9 @@ parse (T_CodeSpan : x : xs) =
     if xs /= []
         then
             case x of
-                T_Text str  ->      addCB (Text str) <$> parse (T_CodeSpan : xs)
-                T_Blanks b  ->      addCB (Text (replicate b ' ')) <$> parse (T_CodeSpan : xs)
-                T_Newline   ->      addCB (Text ("\n")) <$> parse (T_CodeSpan : xs)
+                T_Text str  ->      addCS (Text str) <$> parse (T_CodeSpan : xs)
+                T_Blanks b  ->      addCS (Text (replicate b ' ')) <$> parse (T_CodeSpan : xs)
+                T_Newline   ->      addCS (Text ("\n")) <$> parse (T_CodeSpan : xs)
                 _           ->      parse xs
         else parse xs
 
@@ -246,14 +246,14 @@ replaceT tmpcontent =
 -- Mehrere aufeinander folgende Texte, Blanks, etc. werden zu einem Absatz
 -- zusammengefügt.
 addP :: AST -> AST -> AST
-
 -- Wenn wir zwei Absätze hintereinander finden, fassen wir diese zusammen
 addP (P ast1) (Sequence (P ast2 : asts)) = Sequence (P (ast1 ++ ast2) : asts)
-addP (EM ast1) (Sequence (P ast2 : asts)) = error $ show ast1 ++ "\n" ++ show asts
+-- addP (EM ast1) (Sequence (P ast2 : asts)) = error $ show ast1 ++ "\n" ++ show asts
+-- CS, EM, ST kommen in ein P
+addP (P ast1) (Sequence (CS ast2 : asts)) = addP (P (ast1 ++ [CS ast2])) (Sequence asts)
 addP (P ast1) (Sequence (EM ast2 : asts)) = addP (P (ast1 ++ [EM ast2])) (Sequence asts)
-
-addP (ST ast1) (Sequence (P ast2 : asts)) = error $ show ast1 ++ "\n" ++ show asts
 addP (P ast1) (Sequence (ST ast2 : asts)) = addP (P (ast1 ++ [ST ast2])) (Sequence asts)
+
 -- Text und dahinter ein P
 addP text@(Text _) (Sequence (P ast2 : asts)) = Sequence (P (text : ast2) : asts)
 -- Andernfalls bleibt der Absatz alleine und wird vorne in die Sequence
@@ -281,6 +281,13 @@ addCB text@(Text _) (Sequence asts) = Sequence (CB [text] : asts)
 addCB cb (Sequence asts) = unP (Sequence (cb : asts)) -- unP ?
 addCB cb ast = error $ show cb ++ "\n" ++ show ast
 
+addCS :: AST -> AST -> AST
+addCS (CS ast1) (Sequence (CS ast2 : asts)) = Sequence (CS (ast1 ++ ast2) : asts)
+addCS text@(Text _) (Sequence (CS ast2 : asts)) = Sequence (CS (text : ast2) : asts)
+addCS text@(Text _) (Sequence asts) = Sequence (CS [text] : asts)
+addCS cs (Sequence asts) = unP (Sequence (cs : asts)) -- unP ?
+addCS cs ast = error $ show cs ++ "\n" ++ show ast
+
 addEM :: AST -> AST -> AST
 addEM (EM ast1) (Sequence (EM ast2 : asts)) = Sequence (P (EM (ast1 ++ ast2):[]) : asts)
 addEM text@(Text _) (Sequence (EM ast2 : asts)) = Sequence (EM (text : ast2) : asts)
@@ -292,7 +299,7 @@ addSTRNG :: AST -> AST -> AST
 addSTRNG (ST ast1) (Sequence (ST ast2 : asts)) = Sequence (ST (ast1 ++ ast2) : asts)
 addSTRNG text@(Text _) (Sequence (ST ast2 : asts)) = Sequence (ST (text : ast2) : asts)
 addSTRNG text@(Text _) (Sequence asts) = Sequence (ST [text] : asts)
-addSTRNG strng (Sequence asts) = unP (Sequence (strng : asts)) -- unP ?
+-- addSTRNG strng (Sequence asts) = unP (Sequence (strng : asts)) -- unP ?
 addSTRNG strng ast = error $ show strng ++ "\n" ++ show ast
 
 ----------------------------
