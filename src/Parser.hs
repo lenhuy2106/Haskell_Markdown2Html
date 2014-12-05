@@ -5,6 +5,7 @@ import           Control.Applicative ((<$>), (<*>))
 import           IR
 
 -- TODO: zusätzl newline am anfang parsen
+-- error $ show
 
 
 -- Der Parser versucht aus einer Liste von Token einen AST zu erzeugen
@@ -185,6 +186,8 @@ parse (T_EM : x : xs) =
                 _           ->      parse xs
         else parse xs
 
+--Sequence (EM (text : ast2) : asts)
+
 -- if yes STRNG
 parse (T_ST : x : xs) =
     if xs /= []
@@ -199,7 +202,7 @@ parse (T_ST : x : xs) =
 --------OTHERS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Text
-parse (T_Text str : xs)  = addP (Text str) <$> parse xs
+parse (T_Text str : xs)  = addP (P [(Text str)]) <$> parse xs
 
 -- Removes Trailing Spaces
 parse (T_Blanks i : T_Newline : xs) = parse (T_Newline : xs)
@@ -246,11 +249,14 @@ addP :: AST -> AST -> AST
 
 -- Wenn wir zwei Absätze hintereinander finden, fassen wir diese zusammen
 addP (P ast1) (Sequence (P ast2 : asts)) = Sequence (P (ast1 ++ ast2) : asts)
+addP (EM ast1) (Sequence (P ast2 : asts)) = error $ show ast1 ++ "\n" ++ show asts
+addP (P ast1) (Sequence (EM ast2 : asts)) = addP (P (ast1 ++ [EM ast2])) (Sequence asts)
 -- Text und dahinter ein P
 addP text@(Text _) (Sequence (P ast2 : asts)) = Sequence (P (text : ast2) : asts)
 -- Andernfalls bleibt der Absatz alleine und wird vorne in die Sequence
 -- eingefügt
 addP text@(Text _) (Sequence ast) = Sequence (P [text] : ast)
+addP text@(EM em) (Sequence ast) = Sequence (P [text] : ast)
 addP p (Sequence ast) = Sequence (p : ast)
 addP p ast = error $ show p ++ "\n" ++ show ast
 
@@ -273,10 +279,10 @@ addCB cb (Sequence asts) = unP (Sequence (cb : asts)) -- unP ?
 addCB cb ast = error $ show cb ++ "\n" ++ show ast
 
 addEM :: AST -> AST -> AST
-addEM (EM ast1) (Sequence (EM ast2 : asts)) = Sequence (EM (ast1 ++ ast2) : asts)
+addEM (EM ast1) (Sequence (EM ast2 : asts)) = Sequence (P (EM (ast1 ++ ast2):[]) : asts)
 addEM text@(Text _) (Sequence (EM ast2 : asts)) = Sequence (EM (text : ast2) : asts)
 addEM text@(Text _) (Sequence asts) = Sequence (EM [text] : asts)
-addEM em (Sequence asts) = unP (Sequence (em : asts)) -- unP ?
+-- addEM em (Sequence asts) = unP (Sequence (em : asts)) -- unP ?
 addEM em ast = error $ show em ++ "\n" ++ show ast
 
 addSTRNG :: AST -> AST -> AST
