@@ -159,19 +159,19 @@ parse (T_MaybeStarEM : xs) =
 parse (T_MaybeStarST : xs) =
     if xs /= []
         then
-            lookahead T_MaybeStarST [] xs [T_ST] [(T_Text "*")]
+            lookahead T_MaybeStarST [] xs [T_ST] [(T_Text "**")]
         else parse xs
 
 parse (T_MaybeLineEM : xs) =
     if xs /= []
         then
-            lookahead T_MaybeLineEM [] xs [T_EM] [(T_Text "*")]
+            lookahead T_MaybeLineEM [] xs [T_EM] [(T_Text "_")]
         else parse xs
 
 parse (T_MaybeLineST : xs) =
     if xs /= []
         then
-            lookahead T_MaybeLineST [] xs [T_ST] [(T_Text "*")]
+            lookahead T_MaybeLineST [] xs [T_ST] [(T_Text "__")]
         else parse xs
 
 -- if yes EM
@@ -182,7 +182,7 @@ parse (T_EM : x : xs) =
                 T_Text str  ->      addEM (Text str) <$> parse (T_EM : xs)
                 T_Blanks b  ->      addEM (Text (replicate b ' ')) <$> parse (T_EM : xs)
                 T_Newline   ->      addEM (Text ("\n")) <$> parse (T_EM : xs)
-                _           ->      parse xs
+                _           ->      parse (x:xs)
         else parse xs
 
 -- if yes STRNG
@@ -193,7 +193,7 @@ parse (T_ST : x : xs) =
                 T_Text str  ->      addSTRNG (Text str) <$> parse (T_ST : xs)
                 T_Blanks b  ->      addSTRNG (Text (replicate b ' ')) <$> parse (T_ST : xs)
                 T_Newline   ->      addSTRNG (Text ("\n")) <$> parse (T_ST : xs)
-                _           ->      parse xs
+                _           ->      parse (x:xs)
         else parse xs
 
 --------OTHERS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -271,7 +271,7 @@ addCB text@(Text _) (Sequence (CB ast2 : asts)) = Sequence (CB (text : ast2) : a
 addCB text@(Text _) (Sequence asts) = Sequence (CB [text] : asts)
 addCB cb (Sequence asts) = unP (Sequence (cb : asts)) -- unP ?
 addCB cb ast = error $ show cb ++ "\n" ++ show ast
-		
+
 addEM :: AST -> AST -> AST
 addEM (EM ast1) (Sequence (EM ast2 : asts)) = Sequence (EM (ast1 ++ ast2) : asts)
 addEM text@(Text _) (Sequence (EM ast2 : asts)) = Sequence (EM (text : ast2) : asts)
@@ -281,7 +281,7 @@ addEM em ast = error $ show em ++ "\n" ++ show ast
 
 addSTRNG :: AST -> AST -> AST
 addSTRNG (STRNG ast1) (Sequence (STRNG ast2 : asts)) = Sequence (STRNG (ast1 ++ ast2) : asts)
-addSTRNG text@(Text _) (Sequence (EM ast2 : asts)) = Sequence (STRNG (text : ast2) : asts)
+addSTRNG text@(Text _) (Sequence (STRNG ast2 : asts)) = Sequence (STRNG (text : ast2) : asts)
 addSTRNG text@(Text _) (Sequence asts) = Sequence (STRNG [text] : asts)
 addSTRNG strng (Sequence asts) = unP (Sequence (strng : asts)) -- unP ?
 addSTRNG strng ast = error $ show strng ++ "\n" ++ show ast
@@ -291,11 +291,11 @@ addSTRNG strng ast = error $ show strng ++ "\n" ++ show ast
 lookahead :: Token -> [Token] -> [Token] -> [Token] -> [Token] -> Maybe AST
 lookahead pivot stack (x:xs) yes no =
         case x of
-                -- maybe EM
+                -- maybe
                 T_Text str          ->  lookahead pivot (stack++[x]) xs yes no -- pivot (stack ++ [x])
                 T_Blanks b          ->  lookahead pivot (stack++[x]) xs yes no
                 T_Newline           ->  lookahead pivot (stack++[x]) xs yes no
-                -- yes EM
-                pivot               -> parse (yes ++ stack ++ [x] ++ xs)
-                -- no EM
+                -- yes
+                pivot               ->  parse (yes ++ stack ++ [x] ++ xs)
+                -- no
                 _                   ->  parse (no ++ stack ++ [x] ++ xs)
