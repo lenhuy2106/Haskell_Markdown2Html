@@ -183,8 +183,6 @@ parse (T_EM : x : xs) =
                 _           ->      parse xs
         else parse xs
 
---Sequence (EM (text : ast2) : asts)
-
 -- if yes STRNG
 parse (T_ST : x : xs) =
     if xs /= []
