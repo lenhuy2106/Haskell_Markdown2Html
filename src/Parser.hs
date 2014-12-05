@@ -251,6 +251,9 @@ addP :: AST -> AST -> AST
 addP (P ast1) (Sequence (P ast2 : asts)) = Sequence (P (ast1 ++ ast2) : asts)
 addP (EM ast1) (Sequence (P ast2 : asts)) = error $ show ast1 ++ "\n" ++ show asts
 addP (P ast1) (Sequence (EM ast2 : asts)) = addP (P (ast1 ++ [EM ast2])) (Sequence asts)
+
+addP (ST ast1) (Sequence (P ast2 : asts)) = error $ show ast1 ++ "\n" ++ show asts
+addP (P ast1) (Sequence (ST ast2 : asts)) = addP (P (ast1 ++ [ST ast2])) (Sequence asts)
 -- Text und dahinter ein P
 addP text@(Text _) (Sequence (P ast2 : asts)) = Sequence (P (text : ast2) : asts)
 -- Andernfalls bleibt der Absatz alleine und wird vorne in die Sequence
@@ -286,9 +289,9 @@ addEM text@(Text _) (Sequence asts) = Sequence (EM [text] : asts)
 addEM em ast = error $ show em ++ "\n" ++ show ast
 
 addSTRNG :: AST -> AST -> AST
-addSTRNG (STRNG ast1) (Sequence (STRNG ast2 : asts)) = Sequence (STRNG (ast1 ++ ast2) : asts)
-addSTRNG text@(Text _) (Sequence (STRNG ast2 : asts)) = Sequence (STRNG (text : ast2) : asts)
-addSTRNG text@(Text _) (Sequence asts) = Sequence (STRNG [text] : asts)
+addSTRNG (ST ast1) (Sequence (ST ast2 : asts)) = Sequence (ST (ast1 ++ ast2) : asts)
+addSTRNG text@(Text _) (Sequence (ST ast2 : asts)) = Sequence (ST (text : ast2) : asts)
+addSTRNG text@(Text _) (Sequence asts) = Sequence (ST [text] : asts)
 addSTRNG strng (Sequence asts) = unP (Sequence (strng : asts)) -- unP ?
 addSTRNG strng ast = error $ show strng ++ "\n" ++ show ast
 
