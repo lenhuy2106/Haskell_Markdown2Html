@@ -151,28 +151,26 @@ parse (T_CodeSpan : x : xs) =
 
 -- lookahead pivot stack xs yes no
 parse (T_MaybeStarEM : xs) =
-    if xs /= []
-        then
-            lookahead T_MaybeStarEM [] xs [T_EM] [(T_Text "*")]
-        else parse xs
+    case (head xs) of -- if first token is a blank
+        T_Blanks b  ->  parse ((T_Text "*") : xs)
+        _           ->  lookahead T_MaybeStarEM [] xs [T_EM] [(T_Text "*")]
+
 
 parse (T_MaybeStarST : xs) =
-    if xs /= []
-        then
-            lookahead T_MaybeStarST [] xs [T_ST] [(T_Text "**")]
-        else parse xs
+    case (head xs) of
+        T_Blanks b  ->  parse ((T_Text "**") : xs)
+        _           ->  lookahead T_MaybeStarST [] xs [T_ST] [(T_Text "**")]
 
 parse (T_MaybeLineEM : xs) =
-    if xs /= []
-        then
-            lookahead T_MaybeLineEM [] xs [T_EM] [(T_Text "_")]
-        else parse xs
+    case (head xs) of
+        T_Blanks b  ->  parse ((T_Text "_") : xs)
+        _           ->  lookahead T_MaybeLineEM [] xs [T_EM] [(T_Text "_")]
 
 parse (T_MaybeLineST : xs) =
-    if xs /= []
-        then
-            lookahead T_MaybeLineST [] xs [T_ST] [(T_Text "__")]
-        else parse xs
+    case (head xs) of
+        T_Blanks b  ->  parse ((T_Text "__") : xs)
+        _           ->  lookahead T_MaybeStarEM [] xs [T_EM] [(T_Text "__")]
+
 
 -- if yes EM
 parse (T_EM : x : xs) =
@@ -307,7 +305,9 @@ lookahead :: Token -> [Token] -> [Token] -> [Token] -> [Token] -> Maybe AST
 lookahead pivot stack (x:xs) yes no
                 | x == a       =  lookahead pivot (stack++[x]) xs yes no -- where clause
                 -- yes
-                | x == pivot   =  parse (yes ++ stack ++ [x] ++ xs)
+                | x == pivot   =  case (last stack) of -- if last Token was a Blank
+                                        T_Blanks b  ->  parse (no ++ stack ++ [x] ++ xs)
+                                        _           ->  parse (yes ++ stack ++ [x] ++ xs)
                 -- no
                 | otherwise    =  parse (no ++ stack ++ [x] ++ xs)
                     -- translate pattern to value
