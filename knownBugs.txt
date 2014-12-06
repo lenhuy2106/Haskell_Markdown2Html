@@ -1,2 +1,5 @@
 ICB:
-    - E:69
+    - E69
+
+Emphasis
+    - E292: codespans divids strong emphasis (not affecting html output thou)

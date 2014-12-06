@@ -126,6 +126,10 @@ parse ((T_MaybeCS n cs) : x : xs) =
                 T_Text str      ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
                 T_Blanks b      ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
                 T_Newline       ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
+                T_MaybeStarEM   ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
+                T_MaybeStarST   ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
+                T_MaybeLineEM   ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
+                T_MaybeLineST   ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
                 -- yes CS
                 T_MaybeCS m []  -> if (n == m)
                                         then parse (T_CodeSpan : (cs ++ [x] ++ xs))
@@ -139,10 +143,14 @@ parse (T_CodeSpan : x : xs) =
     if xs /= []
         then
             case x of
-                T_Text str  ->      addCS (Text str) <$> parse (T_CodeSpan : xs)
-                T_Blanks b  ->      addCS (Text (replicate b ' ')) <$> parse (T_CodeSpan : xs)
-                T_Newline   ->      addCS (Text ("\n")) <$> parse (T_CodeSpan : xs)
-                _           ->      parse xs
+                T_Text str      ->  addCS (Text str) <$> parse (T_CodeSpan : xs)
+                T_Blanks b      ->  addCS (Text (replicate b ' ')) <$> parse (T_CodeSpan : xs)
+                T_Newline       ->  addCS (Text ("\n")) <$> parse (T_CodeSpan : xs)
+                T_MaybeStarEM   ->  addCS (Text "*") <$> parse (T_CodeSpan : xs)
+                T_MaybeStarST   ->  addCS (Text "**") <$> parse (T_CodeSpan : xs)
+                T_MaybeLineEM   ->  addCS (Text "_") <$> parse (T_CodeSpan : xs)
+                T_MaybeLineST   ->  addCS (Text "__") <$> parse (T_CodeSpan : xs)
+                _               ->  parse xs
         else parse xs
 
 ---------EMPHASIS-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -169,7 +177,7 @@ parse (T_MaybeLineEM : xs) =
 parse (T_MaybeLineST : xs) =
     case (head xs) of
         T_Blanks b  ->  parse ((T_Text "__") : xs)
-        _           ->  lookahead T_MaybeStarEM [] xs [T_EM] [(T_Text "__")]
+        _           ->  lookahead T_MaybeLineST [] xs [T_ST] [(T_Text "__")]
 
 
 -- if yes EM
@@ -188,10 +196,12 @@ parse (T_ST : x : xs) =
     if xs /= []
         then
             case x of
-                T_Text str  ->      addSTRNG (Text str) <$> parse (T_ST : xs)
-                T_Blanks b  ->      addSTRNG (Text (replicate b ' ')) <$> parse (T_ST : xs)
-                T_Newline   ->      addSTRNG (Text ("\n")) <$> parse (T_ST : xs)
-                _           ->      parse xs
+                T_Text str      ->      addSTRNG (Text str) <$> parse (T_ST : xs)
+                T_Blanks b      ->      addSTRNG (Text (replicate b ' ')) <$> parse (T_ST : xs)
+                T_Newline       ->      addSTRNG (Text ("\n")) <$> parse (T_ST : xs)
+                T_MaybeCS n []  ->      let (em, (x:tmp)) = span (/= T_MaybeCS n []) xs
+                                        in addSTRNG (ST []) <$> parse (((T_MaybeCS n []) : em ++ [x]) ++ (T_ST : tmp))
+                _               ->      parse xs
         else parse xs
 
 --------OTHERS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -292,6 +302,9 @@ addEM em ast = error $ show em ++ "\n" ++ show ast
 
 addSTRNG :: AST -> AST -> AST
 addSTRNG (ST ast1) (Sequence (ST ast2 : asts)) = Sequence (ST (ast1 ++ ast2) : asts)
+addSTRNG (ST ast1) (Sequence (EM ast2 : asts)) = addSTRNG (ST (ast1 ++ [EM ast2])) (Sequence asts)
+addSTRNG (ST ast1) (Sequence (CS ast2 : asts)) = Sequence (ST ast1 : CS ast2 : asts)
+
 addSTRNG text@(Text _) (Sequence (ST ast2 : asts)) = Sequence (ST (text : ast2) : asts)
 addSTRNG text@(Text _) (Sequence asts) = Sequence (ST [text] : asts)
 -- addSTRNG strng (Sequence asts) = unP (Sequence (strng : asts)) -- unP ?
@@ -301,17 +314,26 @@ addSTRNG strng ast = error $ show strng ++ "\n" ++ show ast
 
 lookahead :: Token -> [Token] -> [Token] -> [Token] -> [Token] -> Maybe AST
 lookahead pivot stack (x:xs) yes no
-                | x == a       =  lookahead pivot (stack++[x]) xs yes no -- where clause
                 -- yes
                 | x == pivot   =  case (last stack) of -- if last Token was a Blank
                                         T_Blanks b  ->  parse (no ++ stack ++ [x] ++ xs)
                                         _           ->  parse (yes ++ stack ++ [x] ++ xs)
+                -- next
+                | x /= a       =  lookahead pivot (stack++[x]) xs yes no -- where clause
                 -- no
                 | otherwise    =  parse (no ++ stack ++ [x] ++ xs)
                     -- translate pattern to value
-                where a = case x of
-                            T_Text str      ->  T_Text str
-                            T_Newline       ->  T_Newline
-                            T_Blanks b      ->  T_Blanks b
-                            T_End           ->  T_Newline
-                            _               ->  T_End
+                where a = case x of -- promitted token
+                            T_End         ->    T_End
+                            T_MaybeLineEM ->    T_MaybeLineEM
+                            T_MaybeLineST ->    T_MaybeLineST
+                            T_MaybeStarEM ->    T_MaybeStarEM
+                            T_MaybeStarST ->    T_MaybeStarST
+                            _             ->    T_End
+
+escapeMaybe :: Maybe AST -> AST
+escapeMaybe (Just ast) = ast
+escapeMaybe Nothing = Empty
+
+escapeMaybeList :: [Maybe AST] -> [AST]
+escapeMaybeList list = map escapeMaybe list

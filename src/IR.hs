@@ -31,4 +31,5 @@ data AST = Sequence [AST]   -- eine Sequenz von HTML-Elementen
          | CS [AST]         -- Code Span
          | EM [AST]         -- Emphasis
          | ST [AST]      -- Strong Emphasis
+         | Empty
     deriving (Eq, Show)
