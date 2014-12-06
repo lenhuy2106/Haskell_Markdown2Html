@@ -169,6 +169,12 @@ parse (T_MaybeStarST : xs) =
         T_Blanks b  ->  parse ((T_Text "**") : xs)
         _           ->  lookahead T_MaybeStarST [] xs [T_ST] [(T_Text "**")]
 
+parse (T_Text str : T_MaybeLineEM : xs) =
+    parse (T_Text (str++"_") : xs)
+
+parse (T_Text str : T_MaybeLineST : xs) =
+    parse (T_Text (str++"__") : xs)
+
 parse (T_MaybeLineEM : xs) =
     case (head xs) of
         T_Blanks b  ->  parse ((T_Text "_") : xs)
@@ -324,7 +330,14 @@ lookahead pivot stack (x:xs) yes no
                 -- yes
                 | x == pivot   =  case (last stack) of -- if last Token was a Blank
                                         T_Blanks b  ->  parse (no ++ stack ++ [x] ++ xs)
-                                        _           ->  addP (P []) <$> parse (yes ++ stack ++ [x] ++ xs)
+                                        _           ->  case pivot of
+                                                            T_MaybeLineEM   ->   case (head xs) of -- inline underline?
+                                                                                    T_Text str ->   parse (no ++ stack ++ [x] ++ xs)
+                                                                                    _          ->   addP (P []) <$> parse (yes ++ stack ++ [x] ++ xs)
+                                                            T_MaybeLineST   ->   case (head xs) of -- inline underline?
+                                                                                    T_Text str ->   parse (no ++ stack ++ [x] ++ xs)
+                                                                                    _          ->   addP (P []) <$> parse (yes ++ stack ++ [x] ++ xs)
+                                                            _               ->   addP (P []) <$> parse (yes ++ stack ++ [x] ++ xs)
                 -- next
                 | x /= a       =  lookahead pivot (stack++[x]) xs yes no -- where clause
                 -- no
