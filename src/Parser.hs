@@ -317,7 +317,7 @@ lookahead pivot stack (x:xs) yes no
                 -- yes
                 | x == pivot   =  case (last stack) of -- if last Token was a Blank
                                         T_Blanks b  ->  parse (no ++ stack ++ [x] ++ xs)
-                                        _           ->  parse (yes ++ stack ++ [x] ++ xs)
+                                        _           ->  addP (P []) <$> parse (yes ++ stack ++ [x] ++ xs)
                 -- next
                 | x /= a       =  lookahead pivot (stack++[x]) xs yes no -- where clause
                 -- no
