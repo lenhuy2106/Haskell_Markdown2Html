@@ -142,7 +142,7 @@ parse ((T_MaybeCS n cs) : x : xs) =
 parse (T_CodeSpan : x : xs) =
     if xs /= []
         then
-            case x of
+            case x of -- allowed tokens
                 T_Text str      ->  addCS (Text str) <$> parse (T_CodeSpan : xs)
                 T_Blanks b      ->  addCS (Text (replicate b ' ')) <$> parse (T_CodeSpan : xs)
                 T_Newline       ->  addCS (Text ("\n")) <$> parse (T_CodeSpan : xs)
@@ -184,23 +184,29 @@ parse (T_MaybeLineST : xs) =
 parse (T_EM : x : xs) =
     if xs /= []
         then
-            case x of
-                T_Text str  ->      addEM (Text str) <$> parse (T_EM : xs)
-                T_Blanks b  ->      addEM (Text (replicate b ' ')) <$> parse (T_EM : xs)
-                T_Newline   ->      addEM (Text ("\n")) <$> parse (T_EM : xs)
-                _           ->      parse xs
+            case x of -- allowed tokens
+                T_Text str      ->      addEM (Text str) <$> parse (T_EM : xs)
+                T_Blanks b      ->      addEM (Text (replicate b ' ')) <$> parse (T_EM : xs)
+                T_Newline       ->      addEM (Text ("\n")) <$> parse (T_EM : xs)
+                T_MaybeCS n []  ->      let (em, (x:tmp)) = span (/= T_MaybeCS n []) xs -- nested
+                                        in addEM (EM []) <$> parse (((T_MaybeCS n []) : em ++ [x]) ++ (T_EM : tmp))
+                T_MaybeStarST   ->      addEM (Text "**") <$> parse (T_EM : xs)         -- literal
+                T_MaybeLineST   ->      addEM (Text "__") <$> parse (T_EM : xs)         -- literal
+                _               ->      parse xs
         else parse xs
 
 -- if yes STRNG
 parse (T_ST : x : xs) =
     if xs /= []
         then
-            case x of
+            case x of -- allowed tokens
                 T_Text str      ->      addSTRNG (Text str) <$> parse (T_ST : xs)
                 T_Blanks b      ->      addSTRNG (Text (replicate b ' ')) <$> parse (T_ST : xs)
                 T_Newline       ->      addSTRNG (Text ("\n")) <$> parse (T_ST : xs)
-                T_MaybeCS n []  ->      let (em, (x:tmp)) = span (/= T_MaybeCS n []) xs
+                T_MaybeCS n []  ->      let (em, (x:tmp)) = span (/= T_MaybeCS n []) xs -- nested
                                         in addSTRNG (ST []) <$> parse (((T_MaybeCS n []) : em ++ [x]) ++ (T_ST : tmp))
+                T_MaybeStarEM   ->      addSTRNG (Text "*") <$> parse (T_ST : xs)       -- literal
+                T_MaybeLineEM   ->      addSTRNG (Text "_") <$> parse (T_ST : xs)       -- literal
                 _               ->      parse xs
         else parse xs
 
@@ -295,6 +301,8 @@ addCS cs ast = error $ show cs ++ "\n" ++ show ast
 
 addEM :: AST -> AST -> AST
 addEM (EM ast1) (Sequence (EM ast2 : asts)) = Sequence (P (EM (ast1 ++ ast2):[]) : asts)
+addEM (EM ast1) (Sequence (ST ast2 : asts)) = addEM (EM (ast1 ++ [ST ast2])) (Sequence asts)
+addEM (EM ast1) (Sequence (CS ast2 : asts)) = Sequence (EM ast1 : CS ast2 : asts)
 addEM text@(Text _) (Sequence (EM ast2 : asts)) = Sequence (EM (text : ast2) : asts)
 addEM text@(Text _) (Sequence asts) = Sequence (EM [text] : asts)
 -- addEM em (Sequence asts) = unP (Sequence (em : asts)) -- unP ?
@@ -304,7 +312,6 @@ addSTRNG :: AST -> AST -> AST
 addSTRNG (ST ast1) (Sequence (ST ast2 : asts)) = Sequence (ST (ast1 ++ ast2) : asts)
 addSTRNG (ST ast1) (Sequence (EM ast2 : asts)) = addSTRNG (ST (ast1 ++ [EM ast2])) (Sequence asts)
 addSTRNG (ST ast1) (Sequence (CS ast2 : asts)) = Sequence (ST ast1 : CS ast2 : asts)
-
 addSTRNG text@(Text _) (Sequence (ST ast2 : asts)) = Sequence (ST (text : ast2) : asts)
 addSTRNG text@(Text _) (Sequence asts) = Sequence (ST [text] : asts)
 -- addSTRNG strng (Sequence asts) = unP (Sequence (strng : asts)) -- unP ?
@@ -324,12 +331,12 @@ lookahead pivot stack (x:xs) yes no
                 | otherwise    =  parse (no ++ stack ++ [x] ++ xs)
                     -- translate pattern to value
                 where a = case x of -- promitted token
-                            T_End         ->    T_End
-                            T_MaybeLineEM ->    T_MaybeLineEM
-                            T_MaybeLineST ->    T_MaybeLineST
-                            T_MaybeStarEM ->    T_MaybeStarEM
-                            T_MaybeStarST ->    T_MaybeStarST
-                            _             ->    T_End
+                            T_End           ->  T_End
+                            T_MaybeStarEM   ->  T_MaybeStarEM -- either nested or not
+                            T_MaybeStarST   ->  T_MaybeStarST
+                            T_MaybeLineEM   ->  T_MaybeLineEM
+                            T_MaybeLineST   ->  T_MaybeLineST
+                            _               ->  T_End
 
 escapeMaybe :: Maybe AST -> AST
 escapeMaybe (Just ast) = ast
