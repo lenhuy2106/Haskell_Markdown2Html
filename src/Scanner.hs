@@ -9,7 +9,13 @@ scan :: String -> Maybe [Token]
 -- ist der Eingabestrom zuende, ist es die Rekursion auch
 scan ""           = Just (T_End : []) -- ADDED END TOKEN
 
+---------HARDLINEBREAK----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+scan (' ' : ' ' : '\n' : xs) =
+    (T_HardLineBreak : ) <$> scan xs
+
+scan ('\\' : '\n' : xs) =
+    (T_HardLineBreak : ) <$> scan xs
 
 --------ESCAPE CHAR-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -17,10 +23,10 @@ scan ('\\' : '#' : xs) =
     let (escape, rest) = span (=='#') ('#' : xs)
     in (T_Text escape: ) <$> scan rest
 
-scan ('\\' : '*' : xs)    =
+scan ('\\' : '*' : xs) =
     (T_Text "*" : ) <$> scan xs
 
-scan ('\\':xs)    =
+scan ('\\': xs)    =
     (T_Text "\\" : ) <$> scan xs
 
 ---------INDENDED CODE BLOCKS----------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -104,5 +110,5 @@ scan str@('*' : _) =
 
 -- Text ohne die vorher erkannten Zeichen
 scan str          =
-    let (text, rest) = span (`notElem` "# \n ` * _") str
+    let (text, rest) = span (`notElem` "# \n \\ ` * _") str
     in (T_Text text : ) <$> scan rest

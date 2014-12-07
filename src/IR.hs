@@ -6,6 +6,7 @@ data Token = T_Newline          -- '\n'
            | T_Blanks Int       -- Blanks mit Anzahl
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
            | T_HorizontalLine   -- Blanks mit Anzahl
+           | T_HardLineBreak    -- Hard Line Break
            | T_IndCodeBlock     -- Eingerückter Code Block
            | T_MaybeCS Int [Token]
            | T_CodeSpan
@@ -24,12 +25,16 @@ data AST = Sequence [AST]   -- eine Sequenz von HTML-Elementen
                             -- und der AST repräsentiert den Inhalt
          | P [AST]          -- ein Absatz mit dem Inhalt
          | Text String      -- einfach nur Text
+         | Link String -- einfach nur Link
          | Emptyline        -- eine leere Zeile
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
          | HorizontalLine   -- eine Horizontale Trennlinie
+         | HardLineBreak    -- Hard Line Break
          | CB [AST]         -- Code Block
          | CS [AST]         -- Code Span
          | EM [AST]         -- Emphasis
          | ST [AST]      -- Strong Emphasis
          | Empty
     deriving (Eq, Show)
+
+data LinkPart = String

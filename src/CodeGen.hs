@@ -18,6 +18,9 @@ generateHTML ast = htmlHead ++ generateHTML' ast ++ htmlFooter
 
 generateHTML' :: AST -> String
 generateHTML' (Text str) = str
+generateHTML' (Link str) = 
+    let (link,rest) = span (/= ']') str
+    in "<a href=\"" ++ tail (tail (init rest)) ++ "\">" ++ tail link ++ "/a>"
 generateHTML' (P ast)  =
     "<p>" ++ concatMap generateHTML' ast ++ "</p>\n"
 generateHTML' (H i ast) =
@@ -34,5 +37,6 @@ generateHTML' (EM ast) =
     "<em>" ++ concatMap generateHTML' ast ++ "\n</em>\n"
 generateHTML' (ST ast) =
     "<strong>" ++ concatMap generateHTML' ast ++ "\n</strong>\n"
+generateHTML' HardLineBreak = "</ br>"
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 generateHTML' _ = ""

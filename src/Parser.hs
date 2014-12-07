@@ -3,6 +3,7 @@ module Parser ( parse {- nur parse exportieren -} )
 
 import           Control.Applicative ((<$>), (<*>))
 import           IR
+import           Text.Regex
 
 -- TODO: zusätzl newline am anfang parsen
 -- error $ show
@@ -28,6 +29,12 @@ parse (T_Newline : T_Blanks b : []) =
 parse (T_End : []) =
     parse []
 
+---------HARDLINEBREAK----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+parse (T_HardLineBreak : xs) =
+        addP (P [HardLineBreak])
+        <$> parse xs
+
 ---------HORIZONTAL LINE----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Vier oder mehr Sterne werden als Token T_HorizontalLine erkannt und hier als HorizontalLine AST weitergegeben
@@ -40,7 +47,6 @@ parse (T_HorizontalLine:xs) =
 -- E26: ein Escapezeichen wird ignoriert und das folgende Zeichen als String gedeutet
 -- parse (T_EscapeChar:xs) =
 --         parse xs
-
 
 -- NewLine vor einem Header wird ignoriert
 parse (T_Newline : T_H i : xs) =
@@ -194,6 +200,7 @@ parse (T_EM : x : xs) =
                 T_Text str      ->      addEM (Text str) <$> parse (T_EM : xs)
                 T_Blanks b      ->      addEM (Text (replicate b ' ')) <$> parse (T_EM : xs)
                 T_Newline       ->      addEM (Text ("\n")) <$> parse (T_EM : xs)
+                T_HardLineBreak ->      addEM (EM [HardLineBreak]) <$> parse (T_EM : xs)
                 T_MaybeCS n []  ->      let (em, (x:tmp)) = span (/= T_MaybeCS n []) xs -- nested
                                         in addEM (EM []) <$> parse (((T_MaybeCS n []) : em ++ [x]) ++ (T_EM : tmp))
                 T_MaybeStarST   ->      addEM (Text "**") <$> parse (T_EM : xs)         -- literal
@@ -206,20 +213,47 @@ parse (T_ST : x : xs) =
     if xs /= []
         then
             case x of -- allowed tokens
-                T_Text str      ->      addSTRNG (Text str) <$> parse (T_ST : xs)
-                T_Blanks b      ->      addSTRNG (Text (replicate b ' ')) <$> parse (T_ST : xs)
-                T_Newline       ->      addSTRNG (Text ("\n")) <$> parse (T_ST : xs)
+                T_Text str      ->      addST (Text str) <$> parse (T_ST : xs)
+                T_Blanks b      ->      addST (Text (replicate b ' ')) <$> parse (T_ST : xs)
+                T_Newline       ->      addST (Text ("\n")) <$> parse (T_ST : xs)
+                T_HardLineBreak ->      addST (ST [HardLineBreak]) <$> parse (T_ST : xs)
                 T_MaybeCS n []  ->      let (em, (x:tmp)) = span (/= T_MaybeCS n []) xs -- nested
-                                        in addSTRNG (ST []) <$> parse (((T_MaybeCS n []) : em ++ [x]) ++ (T_ST : tmp))
-                T_MaybeStarEM   ->      addSTRNG (Text "*") <$> parse (T_ST : xs)       -- literal
-                T_MaybeLineEM   ->      addSTRNG (Text "_") <$> parse (T_ST : xs)       -- literal
+                                        in addST (ST []) <$> parse (((T_MaybeCS n []) : em ++ [x]) ++ (T_ST : tmp))
+                T_MaybeStarEM   ->      addST (Text "*") <$> parse (T_ST : xs)       -- literal
+                T_MaybeLineEM   ->      addST (Text "_") <$> parse (T_ST : xs)       -- literal
                 _               ->      parse xs
         else parse xs
 
 --------OTHERS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
--- Text
-parse (T_Text str : xs)  = addP (P [(Text str)]) <$> parse xs
+--parse (T_Text str : T_Blanks i : T_Text str2 : xs) =
+--    let regexLinkStart = mkRegex "\\[[a-zA-Z0-9./:-]*\\]\\("
+--        regexLinkURI1 = mkRegex "/[a-zA-Z0-9./:-]*\\)"
+--        regexLinkURI2 = mkRegex "/<[a-zA-Z0-9./:- ]*\\>)"
+--        regexLinkTitle = mkRegex "\"[a-zA-Z0-9./:- ]*\""
+--    in case (matchRegexAll regexLinkStart str) of 
+--        Nothing -> addP (P [(Text str)]) <$> parse xs
+--        Just (one,two,three,four) -> 
+--           case matchRegexAll regexLinkURI1 three of
+--                Nothing -> addP (P [(Text str)]) <$> parse xs
+--                Just (one1,two2,three3,four4) -> if one1 == [] 
+--                    then addP (P ([Text one] ++ [Link two] ++ [Link two2] ++ [Text three3])) <$> parse xs
+--                   else addP (P [(Text str)]) <$> parse xs
+
+
+-- Text OR Link without Spaces
+parse (T_Text str : xs)  = 
+    let regexLinkStart = mkRegex "\\[[a-zA-Z0-9./:-]*\\]\\("
+        regexLinkURI1 = mkRegex "/[a-zA-Z0-9./:-]*\\)"
+    in case (matchRegexAll regexLinkStart str) of 
+        Nothing -> addP (P [(Text str)]) <$> parse xs
+        Just (one,two,three,four) -> 
+            case matchRegexAll regexLinkURI1 three of
+                Nothing -> addP (P [(Text str)]) <$> parse xs
+                Just (one1,two2,three3,four4) -> if one1 == [] 
+                    then addP (P ([Text one] ++ [Link (two++two2)] ++ [Text three3])) <$> parse xs
+                    else addP (P [(Text str)]) <$> parse xs
+
 
 -- Removes Trailing Spaces
 parse (T_Blanks i : T_Newline : xs) = parse (T_Newline : xs)
@@ -306,22 +340,23 @@ addCS cs (Sequence asts) = unP (Sequence (cs : asts)) -- unP ?
 addCS cs ast = error $ show cs ++ "\n" ++ show ast
 
 addEM :: AST -> AST -> AST
-addEM (EM ast1) (Sequence (EM ast2 : asts)) = Sequence (P (EM (ast1 ++ ast2):[]) : asts)
+addEM (EM ast1) (Sequence (EM ast2 : asts)) = Sequence (EM (ast1 ++ ast2) : asts)
 addEM (EM ast1) (Sequence (ST ast2 : asts)) = addEM (EM (ast1 ++ [ST ast2])) (Sequence asts)
 addEM (EM ast1) (Sequence (CS ast2 : asts)) = Sequence (EM ast1 : CS ast2 : asts)
+-- addEM (EM ast1) (Sequence (HardLineBreak : asts)) = Sequence (EM ast1 : HardLineBreak : asts)
 addEM text@(Text _) (Sequence (EM ast2 : asts)) = Sequence (EM (text : ast2) : asts)
 addEM text@(Text _) (Sequence asts) = Sequence (EM [text] : asts)
 -- addEM em (Sequence asts) = unP (Sequence (em : asts)) -- unP ?
 addEM em ast = error $ show em ++ "\n" ++ show ast
 
-addSTRNG :: AST -> AST -> AST
-addSTRNG (ST ast1) (Sequence (ST ast2 : asts)) = Sequence (ST (ast1 ++ ast2) : asts)
-addSTRNG (ST ast1) (Sequence (EM ast2 : asts)) = addSTRNG (ST (ast1 ++ [EM ast2])) (Sequence asts)
-addSTRNG (ST ast1) (Sequence (CS ast2 : asts)) = Sequence (ST ast1 : CS ast2 : asts)
-addSTRNG text@(Text _) (Sequence (ST ast2 : asts)) = Sequence (ST (text : ast2) : asts)
-addSTRNG text@(Text _) (Sequence asts) = Sequence (ST [text] : asts)
--- addSTRNG strng (Sequence asts) = unP (Sequence (strng : asts)) -- unP ?
-addSTRNG strng ast = error $ show strng ++ "\n" ++ show ast
+addST :: AST -> AST -> AST
+addST (ST ast1) (Sequence (ST ast2 : asts)) = Sequence (ST (ast1 ++ ast2) : asts)
+addST (ST ast1) (Sequence (EM ast2 : asts)) = addST (ST (ast1 ++ [EM ast2])) (Sequence asts)
+addST (ST ast1) (Sequence (CS ast2 : asts)) = Sequence (ST ast1 : CS ast2 : asts)
+addST text@(Text _) (Sequence (ST ast2 : asts)) = Sequence (ST (text : ast2) : asts)
+addST text@(Text _) (Sequence asts) = Sequence (ST [text] : asts)
+-- addST strng (Sequence asts) = unP (Sequence (strng : asts)) -- unP ?
+addST strng ast = error $ show strng ++ "\n" ++ show ast
 
 ----------------------------
 
