@@ -3,12 +3,16 @@ module Parser ( parse {- nur parse exportieren -} )
 
 import           Control.Applicative ((<$>), (<*>))
 import           IR
+import           Text.Regex
 
 -- TODO: zusätzl newline am anfang parsen
 -- error $ show
 
 -- Der Parser versucht aus einer Liste von Token einen AST zu erzeugen
 parse :: [Token] -> Maybe AST
+regexLink1 = mkRegex "\\[[a-zA-Z0-9./:-]*\\]\\([ ]*/[a-zA-Z0-9./:-]*\\)"
+regexLink2 = mkRegex "\\[[a-zA-Z0-9./:-]*\\]\\([ ]*/<[a-zA-Z0-9./:- ]*\\>)"
+
 
 -- Die leere Liste ergibt eine leere Sequenz
 parse [] = Just $ Sequence []
