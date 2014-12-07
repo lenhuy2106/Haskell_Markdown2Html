@@ -10,8 +10,6 @@ import           Text.Regex
 
 -- Der Parser versucht aus einer Liste von Token einen AST zu erzeugen
 parse :: [Token] -> Maybe AST
-regexLink1 = mkRegex "\\[[a-zA-Z0-9./:-]*\\]\\([ ]*/[a-zA-Z0-9./:-]*\\)"
-regexLink2 = mkRegex "\\[[a-zA-Z0-9./:-]*\\]\\([ ]*/<[a-zA-Z0-9./:- ]*\\>)"
 
 -- Die leere Liste ergibt eine leere Sequenz
 parse [] = Just $ Sequence []
@@ -222,7 +220,20 @@ parse (T_ST : x : xs) =
 --------OTHERS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Text
-parse (T_Text str : xs)  = addP (P [(Text str)]) <$> parse xs
+parse (T_Text str : xs)  = 
+    let regexLinkStart = mkRegex "\\[[a-zA-Z0-9./:-]*\\]\\("
+        regexLinkURI1 = mkRegex "/[a-zA-Z0-9./:-]*\\)"
+        regexLinkURI2 = mkRegex "/<[a-zA-Z0-9./:- ]*\\>)"
+        regexLinkTitle = mkRegex "\"[a-zA-Z0-9./:- ]*\""
+    in case (matchRegexAll regexLinkStart str) of 
+        Nothing -> addP (P [(Text str)]) <$> parse xs
+        Just (one,two,three,four) -> 
+            case matchRegexAll regexLinkURI1 three of
+                Nothing -> addP (P [(Text str)]) <$> parse xs
+                Just (one1,two2,three3,four4) -> if one1 == [] 
+                    then addP (P ([Text one] ++ [Link two] ++ [Link two2] ++ [Text three3])) <$> parse xs
+                    else addP (P [(Text str)]) <$> parse xs
+
 
 -- Removes Trailing Spaces
 parse (T_Blanks i : T_Newline : xs) = parse (T_Newline : xs)
