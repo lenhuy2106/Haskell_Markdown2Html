@@ -219,19 +219,32 @@ parse (T_ST : x : xs) =
 
 --------OTHERS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
--- Text
+--parse (T_Text str : T_Blanks i : T_Text str2 : xs) =
+--    let regexLinkStart = mkRegex "\\[[a-zA-Z0-9./:-]*\\]\\("
+--        regexLinkURI1 = mkRegex "/[a-zA-Z0-9./:-]*\\)"
+--        regexLinkURI2 = mkRegex "/<[a-zA-Z0-9./:- ]*\\>)"
+--        regexLinkTitle = mkRegex "\"[a-zA-Z0-9./:- ]*\""
+--    in case (matchRegexAll regexLinkStart str) of 
+--        Nothing -> addP (P [(Text str)]) <$> parse xs
+--        Just (one,two,three,four) -> 
+--           case matchRegexAll regexLinkURI1 three of
+--                Nothing -> addP (P [(Text str)]) <$> parse xs
+--                Just (one1,two2,three3,four4) -> if one1 == [] 
+--                    then addP (P ([Text one] ++ [Link two] ++ [Link two2] ++ [Text three3])) <$> parse xs
+--                   else addP (P [(Text str)]) <$> parse xs
+
+
+-- Text OR Link without Spaces
 parse (T_Text str : xs)  = 
     let regexLinkStart = mkRegex "\\[[a-zA-Z0-9./:-]*\\]\\("
         regexLinkURI1 = mkRegex "/[a-zA-Z0-9./:-]*\\)"
-        regexLinkURI2 = mkRegex "/<[a-zA-Z0-9./:- ]*\\>)"
-        regexLinkTitle = mkRegex "\"[a-zA-Z0-9./:- ]*\""
     in case (matchRegexAll regexLinkStart str) of 
         Nothing -> addP (P [(Text str)]) <$> parse xs
         Just (one,two,three,four) -> 
             case matchRegexAll regexLinkURI1 three of
                 Nothing -> addP (P [(Text str)]) <$> parse xs
                 Just (one1,two2,three3,four4) -> if one1 == [] 
-                    then addP (P ([Text one] ++ [Link two] ++ [Link two2] ++ [Text three3])) <$> parse xs
+                    then addP (P ([Text one] ++ [Link (two++two2)] ++ [Text three3])) <$> parse xs
                     else addP (P [(Text str)]) <$> parse xs
 
 

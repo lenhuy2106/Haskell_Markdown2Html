@@ -2,7 +2,7 @@
 
 [link](/uri "title")
 
-[link](/)
+[link](/asdfsdf)
 
 [link](<>)
 
