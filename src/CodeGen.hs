@@ -20,7 +20,11 @@ generateHTML' :: AST -> String
 generateHTML' (Text str) = str
 generateHTML' (Link str) = 
     let (link,rest) = span (/= ']') str
-    in "<a href=\"" ++ tail (tail (init rest)) ++ "\">" ++ tail link ++ "/a>"
+    in "<a href=\"" ++ tail (tail (init rest)) ++ "\">" ++ tail link ++ "</a>"
+generateHTML' (LinkTitle str) = 
+    let (link,rest) = span (/= ']') str
+        (uri,rest2) = span (/= ' ') rest
+    in "<a href=\"" ++ tail (tail uri) ++ "\" title=" ++ tail (init rest2) ++">" ++ tail link ++ "</a>"
 generateHTML' (P ast)  =
     "<p>" ++ concatMap generateHTML' ast ++ "</p>\n"
 generateHTML' (H i ast) =

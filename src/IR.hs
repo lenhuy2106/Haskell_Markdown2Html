@@ -25,6 +25,7 @@ data AST = Sequence [AST]   -- eine Sequenz von HTML-Elementen
          | P [AST]          -- ein Absatz mit dem Inhalt
          | Text String      -- einfach nur Text
          | Link String -- einfach nur Link
+         | LinkTitle String
          | Emptyline        -- eine leere Zeile
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
          | HorizontalLine   -- eine Horizontale Trennlinie
