@@ -47,9 +47,9 @@ parse (T_HorizontalLine:xs) =
 parse (T_Newline : T_H i : xs) =
     parse (T_H i : xs)
 
-parse (T_Text str : T_Newline: T_Text str2 : xs) =
+{-parse (T_Text str : T_Newline: T_Text str2 : xs) =
     addP (Text (str ++ "\n" ++ str2)) <$> parse xs
-
+-}
 -- einen einzelnen Zeilenumbruch ignorieren wir (TODO: aber nicht mehr bei
 -- z.B. Code Blocks!)
 parse (T_Newline:xs) =
@@ -218,7 +218,7 @@ parse (T_ST : x : xs) =
         else parse xs
 
 --------OTHERS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
+{-
 parse (T_Text str : T_Blanks i : T_Text str2 : xs) =
     let regexLinkStart = mkRegex "\\[[a-zA-Z0-9./:-]*\\]\\("
         regexLinkURI1 = mkRegex "/[a-zA-Z0-9./:-]*"
@@ -242,12 +242,12 @@ parse (T_Text str : T_Blanks i : T_Text str2 : xs) =
                     then case (matchRegexAll regexLinkTitle str2) of
                         Nothing -> addP (P [(Text str)]) <$> parse xs
                         Just (one11,two22,three33,four44) -> if one1 == []
-                            then addP (P ([Text one] ++ [ImageTitle (two++two2++[' ']++two22)] ++ [Text three3])) <$> parse xs
+                            then addP (P ([Text one] ++ [LinkTitle (two++two2++[' ']++two22)] ++ [Text three3])) <$> parse xs
                             else addP (P [(Text str)]) <$> parse xs
                     else addP (P [(Text str)]) <$> parse xs
 
 
--- Text OR Link without Spaces
+- Text OR Link without Spaces
 parse (T_Text str : xs)  =
     let regexLinkStart = mkRegex "\\[[a-zA-Z0-9./:-]*\\]\\("
         regexLinkURI1 = mkRegex "/[a-zA-Z0-9./:-]*\\)"
@@ -264,7 +264,36 @@ parse (T_Text str : xs)  =
                 Just (one1,two2,three3,four4) -> if one1 == []
                     then addP (P ([Text one] ++ [Link (two++two2)] ++ [Text three3])) <$> parse xs
                     else addP (P [(Text str)]) <$> parse xs
+-}
 
+parse (T_Text str : xs) =
+    let (line,rest) = span (/= T_Newline) (T_Text str:xs)
+        regexLinkTitle = mkRegex "\\[[a-zA-Z0-9./:-_ ]*\\]\\([ ]*/[a-zA-Z0-9./:-_]*[ ]*\"[a-zA-Z0-9./:-_ ]*\"\\)"
+        regexLink = mkRegex "\\[[a-zA-Z0-9./:-_ ]*\\]\\([ ]*/[a-zA-Z0-9./:-_]*[ ]*\\)"
+        regexLinkEnd = mkRegex "[ ]*\\)"
+        in if length line > 0
+            then let test = tokenToString line
+                     in case matchRegexAll regexLinkTitle test of
+                         Nothing -> case matchRegexAll regexLink test of
+                             Nothing -> addP (P [(Text (str))]) <$> parse xs
+                             Just (one,two,three,four) ->
+                                    let afterLink = returnEnd line
+                                        in if length one == 1 && (last one) == '!'
+                                            then addP (P ([Image (two)])) <$> parse (afterLink ++ rest)
+                                            else if length one == 0
+                                                then addP (P [Link (two)]) <$> parse (afterLink ++ rest)
+                                                else addP (P [Text (init one)]) <$> parse (T_Text (drop (length (init one)) str) : xs)
+                         Just (one1,two2,three3,four4) -> 
+                            let afterLink = returnEnd line
+                                    in if length one1 == 1 && (last one1) == '!'
+                                            then addP (P ([ImageTitle (two2)])) <$> parse (afterLink ++ rest)
+                                            else if length one1 == 0
+                                                then addP (P [LinkTitle (two2)]) <$> parse (afterLink ++ rest)
+                                                else addP (P [Text (init one1)]) <$> parse (T_Text (drop (length (init one1)) str) : xs)
+{-                                    if length one1 == 0
+                                        then addP (P ([LinkTitle (two2)])) <$> parse (afterLink ++ rest)
+                                        else addP (P [Text (one1)]) <$> parse (T_Text (drop (length one1) str) : xs) -}
+            else addP (P [Text "\n"]) <$> parse rest
 
 -- Removes Trailing Spaces
 parse (T_Blanks i : T_Newline : xs) = parse (T_Newline : xs)
@@ -277,6 +306,34 @@ parse tokens = error $ show tokens
 
 
 -- Hilfsfunktionen für den Parser
+
+returnEnd :: [Token] -> [Token]
+regexEnd = mkRegex "\\)"
+returnEnd [] = []
+returnEnd (T_Text str : xs) = let (test,rest) = span (/= ')') str
+    in case rest of
+        [] -> returnEnd xs
+        _ -> [T_Text (tail rest)] ++ xs
+returnEnd (test :rest) = returnEnd rest
+
+
+tokenToString :: [Token] -> String
+tokenToString [] = ""
+tokenToString tmpcontent =
+    let (test:xs) = tmpcontent
+    in case test of
+        T_Newline -> tokenToString xs
+        T_H i -> (replicate i '#') ++ tokenToString xs
+        T_Blanks i -> [' '] ++ tokenToString xs
+        T_Text str -> str ++ tokenToString xs
+        T_HorizontalLine -> "-----" ++ tokenToString xs
+        T_MaybeCS i ast-> ['`'] ++ tokenToString xs
+        T_MaybeStarEM -> ['*'] ++ tokenToString xs
+        T_MaybeStarST -> "**" ++ tokenToString xs
+        T_MaybeLineEM -> ['-'] ++ tokenToString xs
+        T_MaybeLineST -> "--" ++ tokenToString xs
+        T_End -> "xxx" ++ tokenToString xs
+        _ -> "!unknownCharacter!" ++ tokenToString xs
 
 -- check End
 modifyAst :: [Token] -> Maybe AST
@@ -315,7 +372,7 @@ addP (P ast1) (Sequence (P ast2 : asts)) = Sequence (P (ast1 ++ ast2) : asts)
 addP (P ast1) (Sequence (CS ast2 : asts)) = addP (P (ast1 ++ [CS ast2])) (Sequence asts)
 addP (P ast1) (Sequence (EM ast2 : asts)) = addP (P (ast1 ++ [EM ast2])) (Sequence asts)
 addP (P ast1) (Sequence (ST ast2 : asts)) = addP (P (ast1 ++ [ST ast2])) (Sequence asts)
-
+addP (Text str) (Sequence (Text str2 : asts)) = Sequence (P [(Text (str++str2))] : asts)
 -- Text und dahinter ein P
 addP text@(Text _) (Sequence (P ast2 : asts)) = Sequence (P (text : ast2) : asts)
 -- Andernfalls bleibt der Absatz alleine und wird vorne in die Sequence
