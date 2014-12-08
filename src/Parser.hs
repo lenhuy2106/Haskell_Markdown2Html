@@ -31,7 +31,10 @@ parse (T_End : []) =
 
 ---------HARDLINEBREAK----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-parse (T_HardLineBreak : xs) =
+parse (T_HardLineBreak ch: T_Blanks b : xs) =
+    parse (T_HardLineBreak ch : xs)
+
+parse (T_HardLineBreak ch : xs) =
         addP (P [HardLineBreak])
         <$> parse xs
 
@@ -129,19 +132,20 @@ parse ((T_MaybeCS n cs) : x : xs) =
         then
             case x of
                 -- maybe CS
-                T_Text str      ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
-                T_Blanks b      ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
-                T_Newline       ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
-                T_MaybeStarEM   ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
-                T_MaybeStarST   ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
-                T_MaybeLineEM   ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
-                T_MaybeLineST   ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
+                T_Text str          ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
+                T_Blanks b          ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
+                T_Newline           ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
+                T_HardLineBreak ch  ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
+                T_MaybeStarEM       ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
+                T_MaybeStarST       ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
+                T_MaybeLineEM       ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
+                T_MaybeLineST       ->  parse ((T_MaybeCS n (cs ++ [x])) : xs)
                 -- yes CS
-                T_MaybeCS m []  -> if (n == m)
+                T_MaybeCS m []      -> if (n == m)
                                         then parse (T_CodeSpan : (cs ++ [x] ++ xs))
                                         else parse ([T_Text (replicate n '`')] ++ cs ++ [x] ++ xs) -- not same tags
                 -- no CS
-                _               ->  parse ([T_Text (replicate n '`')] ++ cs ++ [x] ++ xs)
+                _                   ->  parse ([T_Text (replicate n '`')] ++ cs ++ [x] ++ xs)
         else parse (x:xs)
 
 -- if yes CS
@@ -149,14 +153,15 @@ parse (T_CodeSpan : x : xs) =
     if xs /= []
         then
             case x of -- allowed tokens
-                T_Text str      ->  addCS (Text str) <$> parse (T_CodeSpan : xs)
-                T_Blanks b      ->  addCS (Text (replicate b ' ')) <$> parse (T_CodeSpan : xs)
-                T_Newline       ->  addCS (Text ("\n")) <$> parse (T_CodeSpan : xs)
-                T_MaybeStarEM   ->  addCS (Text "*") <$> parse (T_CodeSpan : xs)
-                T_MaybeStarST   ->  addCS (Text "**") <$> parse (T_CodeSpan : xs)
-                T_MaybeLineEM   ->  addCS (Text "_") <$> parse (T_CodeSpan : xs)
-                T_MaybeLineST   ->  addCS (Text "__") <$> parse (T_CodeSpan : xs)
-                _               ->  parse xs
+                T_Text str          ->  addCS (Text str) <$> parse (T_CodeSpan : xs)
+                T_Blanks b          ->  addCS (Text (replicate b ' ')) <$> parse (T_CodeSpan : xs)
+                T_Newline           ->  addCS (Text ("\n")) <$> parse (T_CodeSpan : xs)
+                T_HardLineBreak ch  ->  addCS (Text (ch++" ")) <$> parse (T_CodeSpan : xs)
+                T_MaybeStarEM       ->  addCS (Text "*") <$> parse (T_CodeSpan : xs)
+                T_MaybeStarST       ->  addCS (Text "**") <$> parse (T_CodeSpan : xs)
+                T_MaybeLineEM       ->  addCS (Text "_") <$> parse (T_CodeSpan : xs)
+                T_MaybeLineST       ->  addCS (Text "__") <$> parse (T_CodeSpan : xs)
+                _                   ->  parse xs
         else parse xs
 
 ---------EMPHASIS-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -197,15 +202,15 @@ parse (T_EM : x : xs) =
     if xs /= []
         then
             case x of -- allowed tokens
-                T_Text str      ->      addEM (Text str) <$> parse (T_EM : xs)
-                T_Blanks b      ->      addEM (Text (replicate b ' ')) <$> parse (T_EM : xs)
-                T_Newline       ->      addEM (Text ("\n")) <$> parse (T_EM : xs)
-                T_HardLineBreak ->      addEM (EM [HardLineBreak]) <$> parse (T_EM : xs)
-                T_MaybeCS n []  ->      let (em, (x:tmp)) = span (/= T_MaybeCS n []) xs -- nested
-                                        in addEM (EM []) <$> parse (((T_MaybeCS n []) : em ++ [x]) ++ (T_EM : tmp))
-                T_MaybeStarST   ->      addEM (Text "**") <$> parse (T_EM : xs)         -- literal
-                T_MaybeLineST   ->      addEM (Text "__") <$> parse (T_EM : xs)         -- literal
-                _               ->      parse xs
+                T_Text str          ->      addEM (Text str) <$> parse (T_EM : xs)
+                T_Blanks b          ->      addEM (Text (replicate b ' ')) <$> parse (T_EM : xs)
+                T_Newline           ->      addEM (Text ("\n")) <$> parse (T_EM : xs)
+                T_HardLineBreak ch  ->      addEM (EM [HardLineBreak]) <$> parse (T_EM : xs)
+                T_MaybeCS n []      ->      let (em, (x:tmp)) = span (/= T_MaybeCS n []) xs -- nested
+                                            in addEM (EM []) <$> parse (((T_MaybeCS n []) : em ++ [x]) ++ (T_EM : tmp))
+                T_MaybeStarST       ->      addEM (Text "**") <$> parse (T_EM : xs)         -- literal
+                T_MaybeLineST       ->      addEM (Text "__") <$> parse (T_EM : xs)         -- literal
+                _                   ->      parse xs
         else parse xs
 
 -- if yes STRNG
@@ -213,15 +218,15 @@ parse (T_ST : x : xs) =
     if xs /= []
         then
             case x of -- allowed tokens
-                T_Text str      ->      addST (Text str) <$> parse (T_ST : xs)
-                T_Blanks b      ->      addST (Text (replicate b ' ')) <$> parse (T_ST : xs)
-                T_Newline       ->      addST (Text ("\n")) <$> parse (T_ST : xs)
-                T_HardLineBreak ->      addST (ST [HardLineBreak]) <$> parse (T_ST : xs)
-                T_MaybeCS n []  ->      let (em, (x:tmp)) = span (/= T_MaybeCS n []) xs -- nested
-                                        in addST (ST []) <$> parse (((T_MaybeCS n []) : em ++ [x]) ++ (T_ST : tmp))
-                T_MaybeStarEM   ->      addST (Text "*") <$> parse (T_ST : xs)       -- literal
-                T_MaybeLineEM   ->      addST (Text "_") <$> parse (T_ST : xs)       -- literal
-                _               ->      parse xs
+                T_Text str          ->      addST (Text str) <$> parse (T_ST : xs)
+                T_Blanks b          ->      addST (Text (replicate b ' ')) <$> parse (T_ST : xs)
+                T_Newline           ->      addST (Text ("\n")) <$> parse (T_ST : xs)
+                T_HardLineBreak ch  ->      addST (ST [HardLineBreak]) <$> parse (T_ST : xs)
+                T_MaybeCS n []      ->      let (em, (x:tmp)) = span (/= T_MaybeCS n []) xs -- nested
+                                            in addST (ST []) <$> parse (((T_MaybeCS n []) : em ++ [x]) ++ (T_ST : tmp))
+                T_MaybeStarEM       ->      addST (Text "*") <$> parse (T_ST : xs)       -- literal
+                T_MaybeLineEM       ->      addST (Text "_") <$> parse (T_ST : xs)       -- literal
+                _                   ->      parse xs
         else parse xs
 
 --------OTHERS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------

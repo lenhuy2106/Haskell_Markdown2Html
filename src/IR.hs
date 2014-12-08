@@ -6,7 +6,7 @@ data Token = T_Newline          -- '\n'
            | T_Blanks Int       -- Blanks mit Anzahl
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
            | T_HorizontalLine   -- Blanks mit Anzahl
-           | T_HardLineBreak    -- Hard Line Break
+           | T_HardLineBreak String   -- Hard Line Break
            | T_IndCodeBlock     -- Eingerückter Code Block
            | T_MaybeCS Int [Token]
            | T_CodeSpan
