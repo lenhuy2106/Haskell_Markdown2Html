@@ -167,6 +167,7 @@ parse (T_CodeSpan : x : xs) =
                 T_Text str          ->  addCS (Text str) <$> parse (T_CodeSpan : xs)
                 T_Blanks b          ->  addCS (Text (replicate b ' ')) <$> parse (T_CodeSpan : xs)
                 T_Newline           ->  addCS (Text ("\n")) <$> parse (T_CodeSpan : xs)
+                T_H h               ->  addCS (Text (replicate h '#')) <$> parse (T_CodeSpan : xs)
                 T_HardLineBreak ch  ->  addCS (Text (ch++" ")) <$> parse (T_CodeSpan : xs)
                 T_MaybeStarEM       ->  addCS (Text "*") <$> parse (T_CodeSpan : xs)
                 T_MaybeStarST       ->  addCS (Text "**") <$> parse (T_CodeSpan : xs)
