@@ -7,6 +7,8 @@
 
 [link]("hallo")
 
+[link](foo
+bar)
 
 
 ![](/uri "title")

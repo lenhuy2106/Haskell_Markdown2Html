@@ -168,20 +168,19 @@ Emphasis
     - E292: codespans divids strong emphasis (not affecting html output thou)
 
 ------------------------------------------------------------------------- E355
-[link](/uri "title")
-
+[link](/uri "title") 
 ------------------------------------------------------------------------- E356
 [link](/uri)
-
 ------------------------------------------------------------------------- E357
 [link]()
 ------------------------------------------------------------------------- E358
+                                             Only working with upper structure
 [link](<>)
 
 ------------------------------------------------------------------------- E359
-[link](/my uri)<p>[link](/my uri)</p>
+[link](/my uri)
 ------------------------------------------------------------------------- E360
-[link](</my uri>)<p><a href="/my%20uri">link</a></p>
+[link](</my uri>)
 
 ------------------------------------------------------------------------- E361
 [link](foo
@@ -189,48 +188,46 @@ bar)<p>[link](foo
 bar)</p>
 
 ------------------------------------------------------------------------- E362
-[link]((foo)and(bar))<p><a href="(foo)and(bar)">link</a></p>
+[link]((foo)and(bar))                        ParanthesisStructures not working
 
 ------------------------------------------------------------------------- E363
-[link](foo(and(bar)))<p>[link](foo(and(bar)))</p>
+[link](foo(and(bar)))                        ParanthesisStructures not working
 
 ------------------------------------------------------------------------- E364
-[link](foo(and\(bar\)))<p><a href="foo(and(bar))">link</a></p>
+[link](foo(and\(bar\)))                      ParanthesisStructures not working
 
 ------------------------------------------------------------------------- E365
-[link](<foo(and(bar))>)<p><a href="foo(and(bar))">link</a></p>
+[link](<foo(and(bar))>)                      ParanthesisStructures not working
 
 ------------------------------------------------------------------------- E366
-[link](foo\)\:)<p><a href="foo):">link</a></p>
+[link](foo\)\:)                              ParanthesisStructures not working
 
 ------------------------------------------------------------------------- E367
-[link](foo%20b&auml;)<p><a href="foo%20b%C3%A4">link</a></p>
+[link](foo%20b&auml;)                        ParanthesisStructures not working
 
 ------------------------------------------------------------------------- E368
-[link]("title")<p><a href="%22title%22">link</a></p>
+[link]("title")                              ParanthesisStructures not working
 
 ------------------------------------------------------------------------- E369
 [link](/url "title")
-[link](/url 'title')
-[link](/url (title))<p><a href="/url" title="title">link</a>
-<a href="/url" title="title">link</a>
-<a href="/url" title="title">link</a></p>
+[link](/url 'title')                        for now only normal quotesigns '"'
+[link](/url (title))
 
 ------------------------------------------------------------------------- E370
-[link](/url "title \"&quot;")<p><a href="/url" title="title &quot;&quot;">link</a></p>
+[link](/url "title \"&quot;")                            No Complex Structures
 
 ------------------------------------------------------------------------- E371
-[link](/url "title "and" title")<p>[link](/url &quot;title &quot;and&quot; title&quot;)</p>
+[link](/url "title "and" title")
 
 ------------------------------------------------------------------------- E372
-[link](/url 'title "and" title')<p><a href="/url" title="title &quot;and&quot; title">link</a></p>
+[link](/url 'title "and" title')
 
 ------------------------------------------------------------------------- E373
-[link](   /uri
-  "title"  )<p><a href="/uri" title="title">link</a></p>
+[link](   /uri                                          Only INLINE
+  "title"  )
 
 ------------------------------------------------------------------------- E374
-[link] (/uri)<p>[link] (/uri)</p>
+[link] (/uri)
 
 ------------------------------------------------------------------------- E375
-[foo <bar attr="](baz)"><p>[foo <bar attr="](baz)"></p>
+[foo <bar attr="](baz)">                    
