@@ -233,7 +233,7 @@ parse (T_Text str : T_Blanks i : T_Text str2 : xs) =
                     then case (matchRegexAll regexLinkTitle str2) of
                         Nothing -> addP (P [(Text str)]) <$> parse xs
                         Just (one11,two22,three33,four44) -> if one1 == []
-                            then addP (P ([Text one] ++ [ImageTitle (two++two2++[' ']++two22)] ++ [Text three3])) <$> parse xs
+                            then addP (P ([Text (init one)] ++ [ImageTitle (two++two2++[' ']++two22)] ++ [Text three3])) <$> parse xs
                             else addP (P [(Text str)]) <$> parse xs
                     else addP (P [(Text str)]) <$> parse xs
             else case matchRegexAll regexLinkURI1 three of
@@ -257,7 +257,7 @@ parse (T_Text str : xs)  =
             then case matchRegexAll regexLinkURI1 three of
                 Nothing -> addP (P [(Text str)]) <$> parse xs
                 Just (one1,two2,three3,four4) -> if one1 == []
-                    then addP (P ([Text one] ++ [Image (two++two2)] ++ [Text three3])) <$> parse xs
+                    then addP (P ([Text (init one)] ++ [Image (two++two2)] ++ [Text three3])) <$> parse xs
                     else addP (P [(Text str)]) <$> parse xs
             else case matchRegexAll regexLinkURI1 three of
                 Nothing -> addP (P [(Text str)]) <$> parse xs
