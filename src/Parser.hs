@@ -296,7 +296,7 @@ parse (T_Text str : xs)  =
 parse (T_Text str : xs) =
     let (line,rest) = span (/= T_Newline) (T_Text str:xs)
         regexLinkTitle = mkRegex "\\[[a-zA-Z0-9./:-_ ]*\\]\\([ ]*/[a-zA-Z0-9./:-_]*[ ]*\"[a-zA-Z0-9./:-_ ]*\"\\)"
-        regexLink = mkRegex "\\[[a-zA-Z0-9./:-_ ]*\\]\\([ ]*/[a-zA-Z0-9./:-_]*[ ]*\\)"
+        regexLink = mkRegex "\\[[a-zA-Z0-9./:-_ ]*\\]\\([ ]*[/[a-zA-Z0-9./:-_]*]{0,1}[ ]*\\)"
         regexLinkEnd = mkRegex "[ ]*\\)"
         in if length line > 0
             then let test = tokenToString line
