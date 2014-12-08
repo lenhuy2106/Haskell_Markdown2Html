@@ -91,6 +91,9 @@ parse (T_H i : xs) =
             (\(Sequence ast) headerAst -> Sequence (H i (unP headerAst) : ast))
             <$> parse rest  -- FIXED: parse (tail rest)
             <*> modifyAst content'
+        [T_End] -> (\(Sequence ast) headerAst -> Sequence (H i (unP headerAst) : ast))
+            <$> parse []  -- FIXED: parse (tail rest)
+            <*> modifyAst []
         -- kein Leerzeichen == kein Header
         _ -> addP (Text (replicate i '#')) <$> parse xs
 
@@ -372,6 +375,8 @@ modifyAst tmpcontent =
                     T_Text _ -> parse (init (replaceT tmpcontent) ++ [T_Text (replicate i '#')])
                     _ -> parse $ init (replaceT tmpcontent)
                 T_Blanks _ -> modifyAst (init tmpcontent)
+                T_End -> let newcontent = init tmpcontent
+                             in modifyAst newcontent
                 _ -> parse $ replaceT tmpcontent
         else parse tmpcontent
 
