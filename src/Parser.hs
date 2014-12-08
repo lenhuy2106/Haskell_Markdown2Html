@@ -51,8 +51,16 @@ parse (T_HorizontalLine:xs) =
 -- parse (T_EscapeChar:xs) =
 --         parse xs
 
+-- H unterbricht kein P
+parse (T_Text str : T_Newline : T_IndCodeBlock : T_Blanks b : T_H h: xs) =
+    parse (T_Text str : T_Text ("\n#") : xs)
+
 -- NewLine vor einem Header wird ignoriert
 parse (T_Newline : T_H i : xs) =
+    parse (T_H i : xs)
+
+-- Blanks vor einem Header wird ignoriert
+parse (T_Blanks b : T_H i : xs) =
     parse (T_H i : xs)
 
 parse (T_Text str : T_Newline: T_Text str2 : xs) =
@@ -94,7 +102,7 @@ parse (T_H i : xs) =
 parse (T_Text str : T_Newline : T_IndCodeBlock : xs) =
     parse (T_Text str : T_Text ("\n") : xs)
 
-parse (T_IndCodeBlock : xs) = 
+parse (T_IndCodeBlock : xs) =
     if xs /= []
         then
             let first = head xs         -- folgendes Token
@@ -103,6 +111,8 @@ parse (T_IndCodeBlock : xs) =
                 T_Text str       -> addCB (Text str)
                                     <$> parse (T_IndCodeBlock : rest)
                 T_Blanks n       -> addCB (Text (replicate n ' '))
+                                    <$> parse (T_IndCodeBlock : rest)
+                T_H n            -> addCB (Text "#")
                                     <$> parse (T_IndCodeBlock : rest)
                 T_IndCodeBlock   -> parse (T_IndCodeBlock : rest)
                 -- newline: ist nach allen newlines ein gültiges ICB ende?
