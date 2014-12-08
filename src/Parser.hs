@@ -123,10 +123,10 @@ parse (T_IndCodeBlock : xs) =
                 T_Newline        -> let (newlinesT, otherT) = span (==T_Newline) rest
                                         firstT = head otherT
                                     in case firstT of              -- wenn gültiges ende
-                                        T_Blanks b ->       parse (T_IndCodeBlock : T_Text "\n" : otherT)
-                                        T_IndCodeBlock ->   addCB (Text "\n")
-                                                            <$> parse (T_IndCodeBlock : rest)
-                                        _ ->                parse rest
+                                        T_Blanks b      ->   parse (T_IndCodeBlock : T_Text "\n" : otherT)
+                                        T_IndCodeBlock  ->   addCB (Text "\n")
+                                                             <$> parse (T_IndCodeBlock : rest)
+                                        _               ->   parse rest
                 _                -> parse xs
         else parse xs
 

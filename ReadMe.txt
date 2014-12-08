@@ -102,7 +102,7 @@ Foo
     foo
 bar
 -------------------------------------------------------------------------- E67
-                                               lines are not parsed as headers
+                                           lines are not parsed as headers yet
 # Header
     foo
 Header
@@ -112,6 +112,11 @@ Header
 -------------------------------------------------------------------------- E68
         foo
     bar
+-------------------------------------------------------------------------- E69
+                                empty indented code blocks are not ignored yet
+    
+    foo
+    
 
 
 • Indented Code Blocks
