@@ -14,7 +14,7 @@ spec =
     describe "The Scanner" $ do
 
         it "scans the empty String" $
-            scan "" `shouldBe` Just []
+            scan "" `shouldBe` Just [T_End]
 
         it "scans a newline" $
             scanAndExtractFirst "\n" `shouldBe` T_Newline
