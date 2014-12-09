@@ -103,7 +103,7 @@ Foo
     foo
 bar
 -------------------------------------------------------------------------- E67
-                                           lines are not parsed as headers yet
+                                        horizontal lines at end are not parsed
 # Header
     foo
 Header
