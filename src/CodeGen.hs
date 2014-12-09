@@ -1,6 +1,7 @@
 module CodeGen where
 
 import           IR
+import           Text.Regex
 
 htmlHead, htmlFooter :: String
 htmlHead = "<!DOCTYPE html>\n\
@@ -20,18 +21,25 @@ generateHTML' :: AST -> String
 generateHTML' (Text str) = str
 generateHTML' (Link str) = 
     let (link,rest) = span (/= ']') str
-    in "<a href=\"" ++ tail (tail (tail (init (init rest)))) ++ "\">" ++ tail link ++ "</a>"
+        (uri,rest2) = span (/= '(') rest
+        regexURI = mkRegex "\\([ ]*\\)"
+    in case matchRegexAll regexURI rest of
+        Nothing -> "<a href=\"" ++ tail (tail ( (init (rest)))) ++ "\">" ++ tail link ++ "</a>"
+        Just (one,two,three,four) -> "<a href=\"\">" ++ tail link ++ "</a>"
 generateHTML' (LinkTitle str) = 
     let (link,rest) = span (/= ']') str
         (uri,rest2) = span (/= '\"') rest
     in "<a href=\"" ++ tail (tail (init uri)) ++ "\" title=\"" ++ tail (init rest2) ++">" ++ tail link ++ "</a>"
+
+
 generateHTML' (Image str) =
     let (link,rest) = span (/= ']') str
     in "<img src=\"" ++ tail (tail (init rest)) ++ "\" alt=\"" ++ tail link ++ "\"/>"
 generateHTML' (ImageTitle str) = 
     let (link,rest) = span (/= ']') str
-        (uri,rest2) = span (/= ' ') rest
-    in "<img src=\"" ++ tail (tail uri) ++ "\" title=" ++ "\" alt=\"" ++ tail link ++ "\" title=" ++ tail (init rest2) ++" />"
+        (uri,rest2) = span (/= '\"') rest
+    in "<img src=\"" ++ tail (tail uri) ++ "\" title=\"" ++ "\" alt=\"" ++ tail link ++ "\" title=" ++ tail (init rest2) ++" />"
+
 generateHTML' (P ast)  =
     "<p>" ++ concatMap generateHTML' ast ++ "</p>\n"
 generateHTML' (H i ast) =
