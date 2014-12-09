@@ -14,6 +14,8 @@ htmlHead = "<!DOCTYPE html>\n\
  \ <body>\n"
 htmlFooter = "</body>\n</html>"
 
+
+-- CodeGen just builds the HTMLCode with the Ast
 generateHTML :: AST -> String
 generateHTML ast = htmlHead ++ generateHTML' ast ++ htmlFooter
 
