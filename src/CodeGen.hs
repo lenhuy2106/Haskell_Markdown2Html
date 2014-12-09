@@ -38,7 +38,7 @@ generateHTML' (Image str) =
 generateHTML' (ImageTitle str) = 
     let (link,rest) = span (/= ']') str
         (uri,rest2) = span (/= '\"') rest
-    in "<img src=\"" ++ tail (tail uri) ++ "\" title=\"" ++ "\" alt=\"" ++ tail link ++ "\" title=" ++ tail (init rest2) ++" />"
+    in "<img src=\"" ++ tail (tail uri) ++ "\" alt=\"" ++ tail link ++ "\" title=\"" ++ tail (init rest2) ++" />"
 
 generateHTML' (P ast)  =
     "<p>" ++ concatMap generateHTML' ast ++ "</p>\n"

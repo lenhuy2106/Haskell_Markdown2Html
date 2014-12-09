@@ -1,20 +1,9 @@
+my[foo bar](/test "title ")
 
-[](/uri "title")
+my [foo bar](/test "title ")
 
-[lin k](/uri)
+my![](/test "title ")
 
-[link]()
+my![foo bar](/test)
 
-[link]("hallo")
-
-[link](foo
-bar)
-
-
-![](/uri "title")
-
-![lin k](/uri)
-
-![link]()
-
-![link]("hallo")
+![foo](train.jpg)

@@ -295,7 +295,7 @@ parse (T_Text str : xs)  =
 
 parse (T_Text str : xs) =
     let (line,rest) = span (/= T_Newline) (T_Text str:xs)
-        regexLinkTitle = mkRegex "\\[[a-zA-Z0-9./:-_ ]*\\]\\([ ]*/[a-zA-Z0-9./:-_]*[ ]*\"[a-zA-Z0-9./:-_ ]*\"\\)"
+        regexLinkTitle = mkRegex "\\[[a-zA-Z0-9./:-_ ]*\\]\\([ ]*/[a-zA-Z0-9./:-_]*[ ]*\"[a-zA-Z0-9./:-_ ]*\"[ ]*\\)"
         regexLink = mkRegex "\\[[a-zA-Z0-9./:-_ ]*\\]\\([ ]*[/[a-zA-Z0-9./:-_]*]{0,1}[ ]*\\)"
         regexLinkEnd = mkRegex "[ ]*\\)"
         in if length line > 0
@@ -309,14 +309,20 @@ parse (T_Text str : xs) =
                                             then addP (P ([Image (two)])) <$> parse (afterLink ++ rest)
                                             else if length one == 0
                                                 then addP (P [Link (two)]) <$> parse (afterLink ++ rest)
-                                                else addP (P [Text (init one)]) <$> parse (T_Text (drop (length (init one)) str) : xs)
+                                                else if tail one /= " "
+                                                    then if tail one /= "!"
+                                                        then addP (P [Text [(head one)]]) <$> parse (T_Text (tail str) : xs)
+                                                        else addP (P [Text [(head one)]]) <$> parse (T_Text (tail str) : xs)
+                                                    else addP (P [Text [(head one)]]) <$> parse (T_Text " " : tail xs)
                          Just (one1,two2,three3,four4) -> 
                             let afterLink = returnEnd line
                                     in if length one1 == 1 && (last one1) == '!'
                                             then addP (P ([ImageTitle (two2)])) <$> parse (afterLink ++ rest)
                                             else if length one1 == 0
                                                 then addP (P [LinkTitle (two2)]) <$> parse (afterLink ++ rest)
-                                                else addP (P [Text (init one1)]) <$> parse (T_Text (drop (length (init one1)) str) : xs)
+                                                else if tail one1 /= " "
+                                                    then addP (P [Text [(head one1)]]) <$> parse (T_Text (tail str) : xs)
+                                                    else addP (P [Text [(head one1)]]) <$> parse (T_Text " " : tail xs)
 {-                                    if length one1 == 0
                                         then addP (P ([LinkTitle (two2)])) <$> parse (afterLink ++ rest)
                                         else addP (P [Text (one1)]) <$> parse (T_Text (drop (length one1) str) : xs) -}
