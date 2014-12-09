@@ -3,7 +3,7 @@ _foo_bar_baz_
 =======
 my[foo bar](/test "title ")
 
-my [foo bar](/test "title ")
+my [foo bar](/test )
 
 my![](/test "title ")
 

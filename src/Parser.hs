@@ -321,35 +321,54 @@ parse (T_Text str : xs)  =
 -}
 
 parse (T_Text str : xs) =
+    -- Splits the tokenstream into seperate lines
     let (line,rest) = span (/= T_Newline) (T_Text str:xs)
+        -- Creating Regex for future uses
         regexLinkTitle = mkRegex "\\[[a-zA-Z0-9./:-_ ]*\\]\\([ ]*/[a-zA-Z0-9./:-_]*[ ]*\"[a-zA-Z0-9./:-_ ]*\"[ ]*\\)"
         regexLink = mkRegex "\\[[a-zA-Z0-9./:-_ ]*\\]\\([ ]*[/[a-zA-Z0-9./:-_]*]{0,1}[ ]*\\)"
         regexLinkEnd = mkRegex "[ ]*\\)"
+
+        -- ignores empty Strings ""
         in if length line > 0
+            -- Converts the TokenStream to a String for RegexMatching
             then let test = tokenToString line
+                     -- Matches line with regex - Case Link with or without Title
                      in case matchRegexAll regexLinkTitle test of
+                         -- Case maybe without a Title
                          Nothing -> case matchRegexAll regexLink test of
+                             -- Case doesnt even match any regex of above
                              Nothing -> addP (P [(Text (str))]) <$> parse xs
+                             -- Case matches regex without title
                              Just (one,two,three,four) ->
                                     let afterLink = returnEnd line
                                         in if length one == 1 && (last one) == '!'
+                                            -- Infront of the regex is the character for an Image -> its an Image, not a usual link
                                             then addP (P ([Image (two)])) <$> parse (afterLink ++ rest)
                                             else if length one == 0
+                                                -- It's a link!!
                                                 then addP (P [Link (two)]) <$> parse (afterLink ++ rest)
+                                                -- else parse each Token or Char of the T_TextToken to reduce the Tokenstream, until the Link/Image matches the Regex first/second
+                                                -- (Recursive minimizing the Tokenstream)
                                                 else if tail one /= " "
                                                     then if tail one /= "!"
                                                         then addP (P [Text [(head one)]]) <$> parse (T_Text (tail str) : xs)
                                                         else addP (P [Text [(head one)]]) <$> parse (T_Text (tail str) : xs)
-                                                    else addP (P [Text [(head one)]]) <$> parse (T_Text " " : tail xs)
-                         Just (one1,two2,three3,four4) -> 
+                                                    else addP (P [Text [(head one)]]) <$> parse (T_Blanks 1 : tail xs)
+                         -- Case with Title
+                         Just (one1,two2,three3,four4) ->
                             let afterLink = returnEnd line
+                                    -- Case matches regex with title and looks if it' an image
                                     in if length one1 == 1 && (last one1) == '!'
+                                            -- Image with Title found
                                             then addP (P ([ImageTitle (two2)])) <$> parse (afterLink ++ rest)
+                                            -- else
                                             else if length one1 == 0
+                                                -- Usual Link
                                                 then addP (P [LinkTitle (two2)]) <$> parse (afterLink ++ rest)
+                                                -- If its not the first occurence reduce tokenstream until link/image matches the regex first/second
                                                 else if tail one1 /= " "
                                                     then addP (P [Text [(head one1)]]) <$> parse (T_Text (tail str) : xs)
-                                                    else addP (P [Text [(head one1)]]) <$> parse (T_Text " " : tail xs)
+                                                    else addP (P [Text [(head one1)]]) <$> parse (T_Blanks 1 : tail xs)
 {-                                    if length one1 == 0
                                         then addP (P ([LinkTitle (two2)])) <$> parse (afterLink ++ rest)
                                         else addP (P [Text (one1)]) <$> parse (T_Text (drop (length one1) str) : xs) -}
@@ -370,6 +389,8 @@ parse tokens = error $ show tokens
 
 -- Hilfsfunktionen für den Parser
 
+-- Returns the Tokenstream after the first occurence of a regex
+-- (not its true function, but called in combination with the logic above it gives the same result #cheat/feature)
 returnEnd :: [Token] -> [Token]
 regexEnd = mkRegex "\\)"
 returnEnd [] = []
@@ -379,7 +400,7 @@ returnEnd (T_Text str : xs) = let (test,rest) = span (/= ')') str
         _ -> [T_Text (tail rest)] ++ xs
 returnEnd (test :rest) = returnEnd rest
 
-
+-- converts a Tokenstream to a String for Patternmatching/RegexMatching
 tokenToString :: [Token] -> String
 tokenToString [] = ""
 tokenToString tmpcontent =
@@ -398,26 +419,29 @@ tokenToString tmpcontent =
         T_End -> "xxx" ++ tokenToString xs
         _ -> "!unknownCharacter!" ++ tokenToString xs
 
--- check End
+-- checks End of a Header
 modifyAst :: [Token] -> Maybe AST
 modifyAst [] = parse []
-modifyAst tmpcontent = 
+modifyAst tmpcontent =
     if length tmpcontent > 1
         then
             let lastT = last tmpcontent
                 sndLastT = tmpcontent !! ((length tmpcontent) - 2)
+            -- if Last token of line is a T_H check second last one. if syntax is right ignore them.
             in case lastT of
                 T_H i -> case sndLastT of
                     T_Blanks _ -> parse (replaceT (init (init tmpcontent)))
                     T_Text _ -> parse (init (replaceT tmpcontent) ++ [T_Text (replicate i '#')])
                     _ -> parse $ init (replaceT tmpcontent)
+                -- removes trailingspaces
                 T_Blanks _ -> modifyAst (init tmpcontent)
+                -- checks end
                 T_End -> let newcontent = init tmpcontent
                              in modifyAst newcontent
                 _ -> parse $ replaceT tmpcontent
         else parse tmpcontent
 
-
+-- replaces Tokens v.1 for paragraphs
 replaceT :: [Token] -> [Token]
 replaceT [] = []
 replaceT tmpcontent =

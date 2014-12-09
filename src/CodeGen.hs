@@ -14,11 +14,14 @@ htmlHead = "<!DOCTYPE html>\n\
  \ <body>\n"
 htmlFooter = "</body>\n</html>"
 
+
+-- CodeGen just builds the HTMLCode with the Ast
 generateHTML :: AST -> String
 generateHTML ast = htmlHead ++ generateHTML' ast ++ htmlFooter
 
 generateHTML' :: AST -> String
 generateHTML' (Text str) = str
+
 generateHTML' (Link str) = 
     let (link,rest) = span (/= ']') str
         (uri,rest2) = span (/= '(') rest
@@ -30,8 +33,6 @@ generateHTML' (LinkTitle str) =
     let (link,rest) = span (/= ']') str
         (uri,rest2) = span (/= '\"') rest
     in "<a href=\"" ++ tail (tail (init uri)) ++ "\" title=\"" ++ tail (init rest2) ++">" ++ tail link ++ "</a>"
-
-
 generateHTML' (Image str) =
     let (link,rest) = span (/= ']') str
     in "<img src=\"" ++ tail (tail (init rest)) ++ "\" alt=\"" ++ tail link ++ "\"/>"
@@ -46,7 +47,6 @@ generateHTML' (H i ast) =
     "<h" ++ show i ++ ">" ++ generateHTML' ast ++ "</h" ++ show i ++ ">\n"
 generateHTML' (Sequence as) =
     concatMap generateHTML' as
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 generateHTML' HorizontalLine = "<hr />"
 generateHTML' (CB ast) =
     "<pre><code>" ++ concatMap generateHTML' ast ++ "\n</code></pre>\n"
@@ -57,5 +57,4 @@ generateHTML' (EM ast) =
 generateHTML' (ST ast) =
     "<strong>" ++ concatMap generateHTML' ast ++ "\n</strong>\n"
 generateHTML' HardLineBreak = "</ br>"
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 generateHTML' _ = ""
