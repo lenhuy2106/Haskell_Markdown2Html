@@ -476,7 +476,7 @@ unP (Sequence (P ast : asts )) = Sequence (Sequence ast : asts)
 unP ast = ast
 
 --------------------------
-
+-- siehe addP
 addCB :: AST -> AST -> AST
 addCB (CB ast1) (Sequence (CB ast2 : asts)) = Sequence (CB (ast1 ++ ast2) : asts)
 addCB text@(Text _) (Sequence (CB ast2 : asts)) = Sequence (CB (text : ast2) : asts)
