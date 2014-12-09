@@ -44,9 +44,16 @@ parse (T_HardLineBreak ch : xs) =
 ---------HORIZONTAL LINE----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Vier oder mehr Sterne werden als Token T_HorizontalLine erkannt und hier als HorizontalLine AST weitergegeben
-parse (T_HorizontalLine h : xs) =
-        (\(Sequence ast) -> Sequence (HorizontalLine : ast))
-        <$> parse xs
+parse (T_Newline : T_Blanks b : T_HorizontalLine h ch : xs) =
+        if b <= 3
+            then (\(Sequence ast) -> Sequence (HorizontalLine : ast)) <$> parse xs
+            else parse (T_Text (replicate h ch) : xs)
+
+parse (T_Newline : T_HorizontalLine h ch : xs) =
+    (\(Sequence ast) -> Sequence (HorizontalLine : ast)) <$> parse xs
+
+parse (T_HorizontalLine h ch : xs) =
+    parse (T_Text (replicate h ch) : xs)
 
 ---------HEADER----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -135,7 +142,7 @@ parse (T_IndCodeBlock : xs) =
                                     <$> parse (T_IndCodeBlock : rest)
                 T_HardLineBreak ch  -> addCB(Text ch)
                                     <$> parse (T_IndCodeBlock : rest)
-                T_HorizontalLine h  -> addCB(Text (replicate h '*'))
+                T_HorizontalLine h ch-> addCB(Text (replicate h ch))
                                     <$> parse (T_IndCodeBlock : rest)
                 T_IndCodeBlock   -> parse (T_IndCodeBlock : rest)
                 -- newline: ist nach allen newlines ein gültiges ICB ende?
@@ -376,7 +383,7 @@ tokenToString tmpcontent =
         T_H i -> (replicate i '#') ++ tokenToString xs
         T_Blanks i -> [' '] ++ tokenToString xs
         T_Text str -> str ++ tokenToString xs
-        T_HorizontalLine h -> (replicate h '*') ++ tokenToString xs
+        T_HorizontalLine h ch-> (replicate h ch) ++ tokenToString xs
         T_MaybeCS i ast-> ['`'] ++ tokenToString xs
         T_MaybeStarEM -> ['*'] ++ tokenToString xs
         T_MaybeStarST -> "**" ++ tokenToString xs

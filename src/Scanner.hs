@@ -28,13 +28,52 @@ scan ('\\' : '\n' : xs) =
 ---------HORIZONTAL LINE----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Sterne die eine HorizontalLine erzeugen
-scan str@('*' : '*' : '*' : '*' : _) =
-    let (stars, rest) = span (=='*') str
-        count = length stars
-    in (if count > 3
-           then ( T_HorizontalLine count : )
-           else ( T_Text stars : ))
-        <$> scan rest
+scan str@('*' : '*' : '*' : '*' : xs) =
+    if xs /= []
+        then
+            let (stars, rest) = span (=='*') str
+                count = length stars
+                (blanks, rest2) = span (==' ') rest
+                first = head (rest2++[' '])
+            in (if count > 3
+                   then if first == '\n'
+                        then ( T_HorizontalLine count '*' : )
+                        else ( T_Text stars : )
+                   else ( T_Text stars : ))
+                <$> scan rest
+        else scan []
+
+-- linien die eine HorizontalLine erzeugen
+scan str@('-' : '-' : '-' : '-' : xs) =
+    if xs /= []
+        then
+            let (stars, rest) = span (=='-') str
+                count = length stars
+                (blanks, rest2) = span (==' ') rest
+                first = head (rest2++[' '])
+            in (if count > 3
+                   then if first == '\n'
+                        then ( T_HorizontalLine count '-' : )
+                        else ( T_Text stars : )
+                   else ( T_Text stars : ))
+                <$> scan rest
+        else scan []
+
+-- unterstriche die eine HorizontalLine erzeugen
+scan str@('_' : '_' : '_' : '_' : xs) =
+    if xs /= []
+        then
+            let (stars, rest) = span (=='_') str
+                count = length stars
+                (blanks, rest2) = span (==' ') rest
+                first = head (rest2++[' '])
+            in (if count > 3
+                   then if first == '\n'
+                        then ( T_HorizontalLine count '_' : )
+                        else ( T_Text stars : )
+                   else ( T_Text stars : ))
+                <$> scan rest
+        else scan []
 
 --------ESCAPE CHAR-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
