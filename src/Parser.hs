@@ -314,6 +314,7 @@ parse (T_Text str : xs)  =
                     else addP (P [(Text str)]) <$> parse xs
 -}
 
+--------LINKS AND IMAGES---------------------------------------------------------------------------------------------------------------------------------------------------------------
 parse (T_Text str : xs) =
     -- Splits the tokenstream into seperate lines
     let (line,rest) = span (/= T_Newline) (T_Text str:xs)
