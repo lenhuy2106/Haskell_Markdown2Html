@@ -16,10 +16,9 @@ parse [] = Just $ Sequence []
 
 -- Zwei Zeilenumbrüche hintereinander sind eine leere Zeile, die in eine Sequenz
 -- eingefügt wird (TODO: in Zukunft nicht immer, z.B. nicht in einem Codeblock!)
-parse (T_Newline:T_Newline:xs) =
+parse (T_Newline : T_Newline : xs) =
         (\(Sequence ast) -> Sequence (Emptyline : ast))
-        <$> parse xs
-
+        <$> parse (T_Newline : xs)
 
 ---------BLANK LINES AT END-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -31,6 +30,10 @@ parse (T_End : []) =
 
 ---------HARDLINEBREAK----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+-- Hardlinebreaks are ignored if empty predecessor
+parse (T_Newline : T_HardLineBreak ch : xs) =
+        parse xs
+
 parse (T_HardLineBreak ch: T_Blanks b : xs) =
     parse (T_HardLineBreak ch : xs)
 
@@ -41,7 +44,7 @@ parse (T_HardLineBreak ch : xs) =
 ---------HORIZONTAL LINE----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Vier oder mehr Sterne werden als Token T_HorizontalLine erkannt und hier als HorizontalLine AST weitergegeben
-parse (T_HorizontalLine:xs) =
+parse (T_HorizontalLine h : xs) =
         (\(Sequence ast) -> Sequence (HorizontalLine : ast))
         <$> parse xs
 
@@ -60,17 +63,21 @@ parse (T_Newline : T_H i : xs) =
     parse (T_H i : xs)
 
 -- Blanks vor einem Header wird ignoriert
-parse (T_Blanks b : T_H i : xs) =
+parse (T_Newline : T_Blanks b : T_H i : xs) =
     parse (T_H i : xs)
 
 -- parse (T_Text str : T_Newline: T_Text str2 : xs) =
 {-parse (T_Text str : T_Newline: T_Text str2 : xs) =
     addP (Text (str ++ "\n" ++ str2)) <$> parse xs
 -}
+
+parse (T_Newline : T_Blanks b : xs) =
+    addP (Text "\n") <$> parse xs
+
 -- einen einzelnen Zeilenumbruch ignorieren wir (TODO: aber nicht mehr bei
 -- z.B. Code Blocks!)
-parse (T_Newline:xs) =
-        parse xs -- addP (Text "\n") <$> parse xs
+parse (T_Newline : xs) =
+    addP (Text "\n") <$> parse xs
 
 -- einem Header muss ein Text etc. bis zum Zeilenende folgen.
 -- Das ergibt zusammen einen Header im AST, er wird einer Sequenz hinzugefügt.
@@ -104,19 +111,31 @@ parse (T_H i : xs) =
 
 -- ICB unterbricht kein P
 parse (T_Text str : T_Newline : T_IndCodeBlock : xs) =
-    parse (T_Text str : T_Text ("\n") : xs)
+    parse (T_Text str : T_Newline : xs)
 
 parse (T_IndCodeBlock : xs) =
     if xs /= []
         then
             let first = head xs         -- folgendes Token
                 rest = tail xs
-            in case first of
+            in case first of        -- literal parsing
                 T_Text str       -> addCB (Text str)
                                     <$> parse (T_IndCodeBlock : rest)
                 T_Blanks n       -> addCB (Text (replicate n ' '))
                                     <$> parse (T_IndCodeBlock : rest)
                 T_H n            -> addCB (Text "#")
+                                    <$> parse (T_IndCodeBlock : rest)
+                T_MaybeStarEM       -> addCB(Text "*")
+                                    <$> parse (T_IndCodeBlock : rest)
+                T_MaybeStarST       -> addCB(Text "**")
+                                    <$> parse (T_IndCodeBlock : rest)
+                T_MaybeLineEM       -> addCB(Text "_")
+                                    <$> parse (T_IndCodeBlock : rest)
+                T_MaybeLineST       -> addCB(Text "__")
+                                    <$> parse (T_IndCodeBlock : rest)
+                T_HardLineBreak ch  -> addCB(Text ch)
+                                    <$> parse (T_IndCodeBlock : rest)
+                T_HorizontalLine h  -> addCB(Text (replicate h '*'))
                                     <$> parse (T_IndCodeBlock : rest)
                 T_IndCodeBlock   -> parse (T_IndCodeBlock : rest)
                 -- newline: ist nach allen newlines ein gültiges ICB ende?
@@ -157,7 +176,8 @@ parse ((T_MaybeCS n cs) : x : xs) =
                 -- yes CS
                 T_MaybeCS m []      -> if (n == m)
                                         then parse (T_CodeSpan : (cs ++ [x] ++ xs))
-                                        else parse ([T_Text (replicate n '`')] ++ cs ++ [x] ++ xs) -- not same tags
+                                        else parse ((T_MaybeCS n (cs ++ [T_Text (replicate m '`')])) : xs)
+                                                  --  ([T_Text (replicate n '`')] ++ cs ++ [x] ++ xs) -- not same tags
                 -- no CS
                 _                   ->  parse ([T_Text (replicate n '`')] ++ cs ++ [x] ++ xs)
         else parse (x:xs)
@@ -228,7 +248,7 @@ parse (T_EM : x : xs) =
                 _                   ->      parse xs
         else parse xs
 
--- if yes STRNG
+-- if yes ST
 parse (T_ST : x : xs) =
     if xs /= []
         then
@@ -322,6 +342,9 @@ parse (T_Text str : xs) =
                                         else addP (P [Text (one1)]) <$> parse (T_Text (drop (length one1) str) : xs) -}
             else addP (P [Text "\n"]) <$> parse rest
 
+-- parse (T_Text str : T_Newline : T_Text str2 : xs) =
+--    parse ((T_Text (str++"\n"++str2)) : xs)
+
 -- Removes Trailing Spaces
 parse (T_Blanks i : T_Newline : xs) = parse (T_Newline : xs)
 
@@ -353,7 +376,7 @@ tokenToString tmpcontent =
         T_H i -> (replicate i '#') ++ tokenToString xs
         T_Blanks i -> [' '] ++ tokenToString xs
         T_Text str -> str ++ tokenToString xs
-        T_HorizontalLine -> "-----" ++ tokenToString xs
+        T_HorizontalLine h -> (replicate h '*') ++ tokenToString xs
         T_MaybeCS i ast-> ['`'] ++ tokenToString xs
         T_MaybeStarEM -> ['*'] ++ tokenToString xs
         T_MaybeStarST -> "**" ++ tokenToString xs
@@ -401,6 +424,7 @@ addP (P ast1) (Sequence (P ast2 : asts)) = Sequence (P (ast1 ++ ast2) : asts)
 addP (P ast1) (Sequence (CS ast2 : asts)) = addP (P (ast1 ++ [CS ast2])) (Sequence asts)
 addP (P ast1) (Sequence (EM ast2 : asts)) = addP (P (ast1 ++ [EM ast2])) (Sequence asts)
 addP (P ast1) (Sequence (ST ast2 : asts)) = addP (P (ast1 ++ [ST ast2])) (Sequence asts)
+addP (Text str) (Sequence (CS ast2 : asts)) = addP (P ((Text str) : [CS ast2])) (Sequence asts)
 addP (Text str) (Sequence (Text str2 : asts)) = Sequence (P [(Text (str++str2))] : asts)
 -- Text und dahinter ein P
 addP text@(Text _) (Sequence (P ast2 : asts)) = Sequence (P (text : ast2) : asts)

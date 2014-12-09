@@ -11,8 +11,16 @@ scan ""           = Just (T_End : []) -- ADDED END TOKEN
 
 ---------HARDLINEBREAK----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-scan (' ' : ' ' : '\n' : xs) =
-    ((T_HardLineBreak "") : ) <$> scan xs
+scan (' ' : ' ' : xs) =
+    if xs /= []
+        then
+            let (spaces, rest) = span (==' ') xs
+                first = head rest
+            in if first == '\n'
+                    then ((T_HardLineBreak "") : ) <$> scan rest
+                    else ( T_Blanks ((length spaces) + 2) : ) <$> scan rest
+        else
+            scan []
 
 scan ('\\' : '\n' : xs) =
     ((T_HardLineBreak "\\"): ) <$> scan xs
@@ -24,7 +32,7 @@ scan str@('*' : '*' : '*' : '*' : _) =
     let (stars, rest) = span (=='*') str
         count = length stars
     in (if count > 3
-           then ( T_HorizontalLine : )
+           then ( T_HorizontalLine count : )
            else ( T_Text stars : ))
         <$> scan rest
 
