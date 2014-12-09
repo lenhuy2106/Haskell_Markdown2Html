@@ -93,10 +93,10 @@ scan ('\\': xs)    =
 scan str@('\n':' ':' ':' ':' ' : _) =
     let (newline, block) = span(=='\n') str
     in let (chunk, rest) = span (==' ') block
-           n = length chunk - 4
+           n = length chunk - 4                                 -- without the first 4
            in (T_Newline : )
            <$> (T_IndCodeBlock : )
-           <$> (T_Blanks n : )  -- add additional spaces
+           <$> (T_Blanks n : )                                  -- add additional spaces
            <$> scan rest
 
 ---------CODE SPAN-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -121,7 +121,7 @@ scan ('*' : xs) =
     (T_MaybeStarEM : )
     <$> scan xs
 
-scan  ('_': '_' : '_' : '_' : xs) =
+scan  ('_': '_' : '_' : '_' : xs) =                                       -- no emphasis
     (T_Text "____" : )
     <$> scan xs
 

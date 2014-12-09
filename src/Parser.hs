@@ -210,18 +210,18 @@ parse (T_CodeSpan : x : xs) =
 
 -- LLv3
 
--- lookahead pivot stack xs yes no
+-- tests a series of tokens for validation
 parse (T_MaybeStarEM : xs) =
     case (head xs) of -- if first token is a blank
         T_Blanks b  ->  parse ((T_Text "*") : xs)
         _           ->  lookahead T_MaybeStarEM [] xs [T_EM] [(T_Text "*")]
-
 
 parse (T_MaybeStarST : xs) =
     case (head xs) of
         T_Blanks b  ->  parse ((T_Text "**") : xs)
         _           ->  lookahead T_MaybeStarST [] xs [T_ST] [(T_Text "**")]
 
+-- no underline emphasis if nested
 parse (T_Text str : T_MaybeLineEM : xs) =
     parse (T_Text (str++"_") : xs)
 
