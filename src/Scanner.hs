@@ -14,16 +14,16 @@ scan ""           = Just (T_End : []) -- ADDED END TOKEN
 scan (' ' : ' ' : xs) =
     if xs /= []
         then
-            let (spaces, rest) = span (==' ') xs
-                first = head rest
-            in if first == '\n'
+            let (spaces, rest)  = span (==' ') xs                               -- more than two spaces
+                first           = head rest
+            in if first == '\n'                                                 -- has to be a line break
                     then ((T_HardLineBreak "") : ) <$> scan rest
                     else ( T_Blanks ((length spaces) + 2) : ) <$> scan rest
         else
             scan []
 
 scan ('\\' : '\n' : xs) =
-    ((T_HardLineBreak "\\"): ) <$> scan xs
+    ((T_HardLineBreak "\\"): ) <$> scan xs                                      -- backspaces are the same
 
 ---------HORIZONTAL LINE----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -34,7 +34,7 @@ scan str@('*' : '*' : '*' : '*' : xs) =
             let (stars, rest) = span (=='*') str
                 count = length stars
                 (blanks, rest2) = span (==' ') rest
-                first = head (rest2++[' '])
+                first = head (rest2++[' '])                                     -- no empty list prelude error
             in (if count > 3
                    then if first == '\n'
                         then ( T_HorizontalLine count '*' : )
