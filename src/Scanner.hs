@@ -135,13 +135,25 @@ scan ('_' : xs) =
 
 ---------LIST ITEMS----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+{-
+scan ('\n': ' ' : ' ' : ' ' : xs) =
+    scanListItems 3 xs -- count prefix blanks
 
+scan ('\n': ' ' : ' ' : xs) =
+    scanListItems 2 xs
+
+scan ('\n': ' ' : xs) =
+    scanListItems 1 xs
+
+scan ('\n': xs) =
+    scanListItems 0 ('\n' : xs)
+-}
     
 --------NEWLINE-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- ein newLine escape
--- matched in scanListItems
--- scan ('\n' : xs)    = (T_Newline : ) <$> scan xs
+-- matched in scanListItems ?
+scan ('\n' : xs)    = (T_Newline : ) <$> scan xs
 
 
 -- eine Anzahl Leerzeichen
