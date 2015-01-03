@@ -133,10 +133,25 @@ scan ('_' : xs) =
     (T_MaybeLineEM : )
     <$> scan xs
 
+---------LIST ITEMS----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+scan ('\n': ' ' : ' ' : ' ' : xs) =
+    scanListItems 3 xs -- count prefix blanks
+
+scan ('\n': ' ' : ' ' : xs) =
+    scanListItems 2 xs
+
+scan ('\n': ' ' : xs) =
+    scanListItems 1 xs
+
+scan ('\n': xs) =
+    scanListItems 0 ('\n' : xs)
+    
 --------NEWLINE-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- ein newLine escape
-scan ('\n' : xs)    = (T_Newline : ) <$> scan xs
+-- matched in scanListItems
+-- scan ('\n' : xs)    = (T_Newline : ) <$> scan xs
 
 
 -- eine Anzahl Leerzeichen
@@ -159,3 +174,22 @@ scan str@('#' : _) =
 scan str          =
     let (text, rest) = span (`notElem` "# \n \\ ` * _") str
     in (T_Text text : ) <$> scan rest
+
+---------HELP----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---------METHODS----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+scanListItems :: Int -> String -> Maybe [Token]
+scanListItems prefixB xs =
+    let (spaces, rest) = span (`elem` ".) ") (tail xs)
+        suffixB = length spaces
+        first = head xs
+        second  = head (tail xs)
+    in if (`elem` "-+*") first
+            -- bullet list
+            then ((T_ListItem (prefixB + 1 + suffixB) first) : ) <$> scan (tail rest)
+            -- ordered list
+            else if (((`elem` "0123456789") first) && ((`elem` ".)") second))
+                then ((T_ListItem (prefixB + 2 + suffixB) first) : ) <$> scan (tail (tail rest))
+                else (T_Newline : ) <$> scan xs
+
+

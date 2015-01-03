@@ -5,6 +5,7 @@ data Token = T_Newline          -- '\n'
            | T_Text String      -- Text
            | T_Blanks Int       -- Blanks mit Anzahl
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+           | T_ListItem Int Char   -- List Item mit Anzahl notwendiger blanks und char
            | T_HorizontalLine Int Char  -- Blanks mit Anzahl
            | T_HardLineBreak String   -- Hard Line Break
            | T_IndCodeBlock     -- Eingerückter Code Block

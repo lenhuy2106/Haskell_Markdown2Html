@@ -18,7 +18,7 @@ parse [] = Just $ Sequence []
 -- eingefügt wird (TODO: in Zukunft nicht immer, z.B. nicht in einem Codeblock!)
 parse (T_Newline : T_Newline : xs) =
         (\(Sequence ast) -> Sequence (Emptyline : ast))
-        <$> parse (T_Newline : xs)
+        <$> parse (T_Newline : xs)  
 
 ---------BLANK LINES AT END-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
