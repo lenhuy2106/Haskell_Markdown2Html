@@ -27,7 +27,7 @@ spec =
                 `shouldBe` T_Blanks 10
 
         it "scans H1" $
-            scanAndExtractFirst "# Hallo" `shouldBe` T_H 1
+            scanAndExtractFirst "# Hallo" `shouldBe` T_H 2
 
         it "scans H2" $
             scanAndExtractFirst "## Hallo" `shouldBe` T_H 2
