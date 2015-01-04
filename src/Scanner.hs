@@ -135,7 +135,6 @@ scan ('_' : xs) =
 
 ---------LIST ITEMS----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-{-
 scan ('\n': ' ' : ' ' : ' ' : xs) =
     scanListItems 3 xs -- count prefix blanks
 
@@ -145,10 +144,33 @@ scan ('\n': ' ' : ' ' : xs) =
 scan ('\n': ' ' : xs) =
     scanListItems 1 xs
 
-scan ('\n': xs) =
-    scanListItems 0 ('\n' : xs)
--}
-    
+scan ('\n': '-' : xs) =
+    scanListItems 0 ('-':xs)
+scan ('\n': '+' : xs) =
+    scanListItems 0 ('+':xs)
+scan ('\n': '*' : xs) =
+    scanListItems 0 ('*':xs)
+scan ('\n': '0' : xs) =
+    scanListItems 0 ('0':xs)
+scan ('\n': '1' : xs) =
+    scanListItems 0 ('1':xs)
+scan ('\n': '2' : xs) =
+    scanListItems 0 ('2':xs)
+scan ('\n': '3' : xs) =
+    scanListItems 0 ('3':xs)
+scan ('\n': '4' : xs) =
+    scanListItems 0 ('4':xs)
+scan ('\n': '5' : xs) =
+    scanListItems 0 ('5':xs)
+scan ('\n': '6' : xs) =
+    scanListItems 0 ('6':xs)
+scan ('\n': '7' : xs) =
+    scanListItems 0 ('7':xs)
+scan ('\n': '8' : xs) =
+    scanListItems 0 ('8':xs)
+scan ('\n': '9' : xs) =
+    scanListItems 0 ('9':xs)
+
 --------NEWLINE-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- ein newLine escape
@@ -181,17 +203,17 @@ scan str          =
 ---------METHODS----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 scanListItems :: Int -> String -> Maybe [Token]
+-- scanListItems prefixB [] =
+--    (T_Newline : ) <$> scan []
 scanListItems prefixB xs =
     let (spaces, rest) = span (`elem` ".) ") (tail xs)
         suffixB = length spaces
         first = head xs
-        second  = head (tail xs)
+        second  = xs !! 1
     in if (`elem` "-+*") first
             -- bullet list
-            then ((T_ListItem (prefixB + 1 + suffixB) first) : ) <$> scan (tail rest)
+            then ((T_ListItem (prefixB + 1 + suffixB) first) : ) <$> scan rest
             -- ordered list
             else if (((`elem` "0123456789") first) && ((`elem` ".)") second))
-                then ((T_ListItem (prefixB + 2 + suffixB) first) : ) <$> scan (tail (tail rest))
+                then ((T_ListItem (prefixB + 1 + suffixB) first) : ) <$> scan rest
                 else (T_Newline : ) <$> scan xs
-
-
