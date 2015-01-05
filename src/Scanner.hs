@@ -2,6 +2,7 @@ module Scanner (scan) where
 
 import           Control.Applicative ((<$>))
 import           IR                  (Token (..))
+import           Data.Char
 
 -- der Scanner erzeugt aus einem Zeichenstrom vielleicht einen Tokenstrom
 scan :: String -> Maybe [Token]
@@ -137,10 +138,8 @@ scan ('_' : xs) =
 
 scan ('\n': ' ' : ' ' : ' ' : xs) =
     scanListItems 3 xs -- count prefix blanks
-
 scan ('\n': ' ' : ' ' : xs) =
     scanListItems 2 xs
-
 scan ('\n': ' ' : xs) =
     scanListItems 1 xs
 
@@ -212,8 +211,8 @@ scanListItems prefixB xs =
         second  = xs !! 1
     in if (`elem` "-+*") first
             -- bullet list
-            then ((T_ListItem (prefixB + 1 + suffixB) first) : ) <$> scan rest
+            then ((T_ListItemBullet (prefixB + 1 + suffixB) first) : ) <$> scan rest
             -- ordered list
             else if (((`elem` "0123456789") first) && ((`elem` ".)") second))
-                then ((T_ListItem (prefixB + 1 + suffixB) first) : ) <$> scan rest
+                then ((T_ListItemOrder (prefixB + 1 + suffixB) (digitToInt first) second) : ) <$> scan rest
                 else (T_Newline : ) <$> scan xs

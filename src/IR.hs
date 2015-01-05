@@ -5,7 +5,8 @@ data Token = T_Newline          -- '\n'
            | T_Text String      -- Text
            | T_Blanks Int       -- Blanks mit Anzahl
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-           | T_ListItem Int Char   -- List Item mit Anzahl notwendiger blanks und char
+           | T_ListItemBullet Int Char   -- List Item Bullet mit Anzahl notwendiger blanks und char
+           | T_ListItemOrder Int Int Char -- List Item Order mit A.n.b., order und delimiter
            | T_HorizontalLine Int Char  -- Blanks mit Anzahl
            | T_HardLineBreak String   -- Hard Line Break
            | T_IndCodeBlock     -- Eingerückter Code Block
@@ -17,6 +18,7 @@ data Token = T_Newline          -- '\n'
            | T_MaybeLineST
            | T_EM
            | T_ST
+           | T_Empty
            | T_End
     deriving (Show, Eq)
 
@@ -38,6 +40,8 @@ data AST = Sequence [AST]   -- eine Sequenz von HTML-Elementen
          | CS [AST]         -- Code Span
          | EM [AST]         -- Emphasis
          | ST [AST]      -- Strong Emphasis
+         | ListBullet [AST]
+         | ListOrder Int [AST]
          | Empty
     deriving (Eq, Show)
 

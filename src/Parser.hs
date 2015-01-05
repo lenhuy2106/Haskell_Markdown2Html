@@ -18,7 +18,11 @@ parse [] = Just $ Sequence []
 -- eingefügt wird (TODO: in Zukunft nicht immer, z.B. nicht in einem Codeblock!)
 parse (T_Newline : T_Newline : xs) =
         (\(Sequence ast) -> Sequence (Emptyline : ast))
-        <$> parse (T_Newline : xs)  
+        <$> parse (T_Newline : xs)
+
+--resets AST
+parse (T_Empty : xs) =
+    (\(Sequence ast) -> Sequence (Empty : ast)) <$> parse xs
 
 ---------BLANK LINES AT END-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -265,6 +269,23 @@ parse (T_ST : x : xs) =
                 _                   ->      parse xs
         else parse xs
 
+--------LIST ITEMS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+parse (T_ListItemBullet ind char : x : xs) =
+    if xs /= []
+        then case x of
+            -- included
+            T_Newline                   ->      addList (Text "\n")         <$> parse (T_ListItemBullet ind char : xs)
+            T_Text str                  ->      addList (Text str)          <$> parse (T_ListItemBullet ind char : xs)
+            --T_IndCodeBlock            ->      addList (addCB (...
+            --T_Header                  ->
+            T_ListItemBullet ind2 char2 ->      if (ind == ind2) && (char == char2)
+                                                    then addList (Text [])           <$> parse (T_ListItemBullet ind char : xs)
+                                                    else parse (T_Empty:x:xs)
+            -- excluded
+            _                   ->      parse (x:xs)
+        else parse xs
+
 --------OTHERS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 {-
 parse (T_Text str : T_Blanks i : T_Text str2 : xs) =
@@ -456,6 +477,7 @@ addP (P ast1) (Sequence (P ast2 : asts)) = Sequence (P (ast1 ++ ast2) : asts)
 addP (P ast1) (Sequence (CS ast2 : asts)) = addP (P (ast1 ++ [CS ast2])) (Sequence asts)
 addP (P ast1) (Sequence (EM ast2 : asts)) = addP (P (ast1 ++ [EM ast2])) (Sequence asts)
 addP (P ast1) (Sequence (ST ast2 : asts)) = addP (P (ast1 ++ [ST ast2])) (Sequence asts)
+addP (P ast1) (Sequence (ListBullet ast2 : asts)) = addP (P (ast1 ++ [ListBullet ast2])) (Sequence asts)
 addP (Text str) (Sequence (CS ast2 : asts)) = addP (P ((Text str) : [CS ast2])) (Sequence asts)
 addP (Text str) (Sequence (Text str2 : asts)) = Sequence (P [(Text (str++str2))] : asts)
 -- Text und dahinter ein P
@@ -510,6 +532,22 @@ addST text@(Text _) (Sequence (ST ast2 : asts)) = Sequence (ST (text : ast2) : a
 addST text@(Text _) (Sequence asts) = Sequence (ST [text] : asts)
 -- addST strng (Sequence asts) = unP (Sequence (strng : asts)) -- unP ?
 addST strng ast = error $ show strng ++ "\n" ++ show ast
+
+----------------------------
+
+addList :: AST -> AST -> AST
+
+addList (ListBullet ast1) (Sequence (ListBullet ast2 : asts)) = Sequence (ListBullet (ast1 ++ ast2) : asts)
+-- addList (List ast1) (Sequence (EM ast2 : asts)) = addST (ST (ast1 ++ [EM ast2])) (Sequence asts)
+-- addList (List ast1) (Sequence (CS ast2 : asts)) = Sequence (ST ast1 : CS ast2 : asts)
+--addList (ListBullet ast1) (Sequence (P ast2 : asts)) = addList (ListBullet (ast1 ++ [P ast2])) (Sequence asts)
+-- addList (P (parag : xs)) (Sequence (ListBullet ast2 : asts)) = Sequence (ListBullet (((addP (P []) parag) : ast2)) : asts)
+-- addList (P pgraph) (Sequence asts) = Sequence (ListBullet pgraph : asts)
+--addList (P (p:pgraph)) (Sequence asts) = Sequence ((ListBullet (addP p pgraph)) : asts)
+addList text@(Text _) (Sequence (ListBullet ast2 : asts)) = Sequence (ListBullet (text : ast2) : asts)
+addList text@(Text _) (Sequence asts) = Sequence (ListBullet [text] : asts)
+
+adddList strng ast = error $ show strng ++ "\n" ++ show ast
 
 ----------------------------
 
