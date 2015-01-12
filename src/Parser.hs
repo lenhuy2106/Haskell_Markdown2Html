@@ -286,11 +286,14 @@ parse (T_ListItemBullet ind char : x : xs) =
             T_Newline                   ->      addList ind (Text "\n")                       <$> parse (T_ListItemBullet ind char : xs)
             T_Text str                  ->      addList ind (Text str)                        <$> parse (T_ListItemBullet ind char : xs)
             T_Blanks b                  ->      addList ind (Text (replicate b ' '))          <$> parse (T_ListItemBullet ind char : xs)
-            T_IndCodeBlock              ->      let a = xs !! 0 == T_Blanks 0
-                                                    b = xs !! 1 == T_Text "-" -- TODO: `elem` all chars
-                                                    c = xs !! 2 == T_Blanks 1
+            T_IndCodeBlock              ->      let a    = xs !! 0 == T_Blanks 0
+                                                    b    = xs !! 1 == T_Text "-" -- TODO: `elem` all chars
+                                                    c    = xs !! 2 == T_Blanks 1
+                                                    ind2 = if ind == 2 -- TODO: Expand cases
+                                                                then ind+2
+                                                                else ind
                                                 in if a && (b && c)
-                                                        then addList ind (ListBullet (ind) [])           <$> parse (T_ListItemBullet (ind + 2) char : (drop 3 xs))
+                                                        then addList ind (ListBullet ind [])           <$> parse (T_ListItemBullet ind2 char : (drop 3 xs))
                                                         else parse (T_ListItemBullet ind char : xs)
             --T_Header                  ->
             T_ListItemBullet ind2 char2 ->      addList ind (ListBullet ind [])     <$> parse (x : xs)
