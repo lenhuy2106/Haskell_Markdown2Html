@@ -271,17 +271,35 @@ parse (T_ST : x : xs) =
 
 --------LIST ITEMS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+{-
+scan ('-' : xs) =
+    if tokens == Nothing
+        then scan xs
+        else tokens
+    where tokens = scanListItems
+-}
+
 parse (T_ListItemBullet ind char : x : xs) =
     if xs /= []
         then case x of
             -- included
-            T_Newline                   ->      addList (Text "\n")         <$> parse (T_ListItemBullet ind char : xs)
-            T_Text str                  ->      addList (Text str)          <$> parse (T_ListItemBullet ind char : xs)
-            --T_IndCodeBlock            ->      addList (addCB (...
+            T_Newline                   ->      addList ind (Text "\n")         <$> parse (T_ListItemBullet ind char : xs)
+            T_Text str                  ->      addList ind (Text str)          <$> parse (T_ListItemBullet ind char : xs)
+            T_IndCodeBlock              ->      let a = xs !! 0 == T_Blanks 0
+                                                    b = xs !! 1 == T_Text "-" -- TODO: `elem` all chars
+                                                    c = xs !! 2 == T_Blanks 1
+                                                in if a && (b && c)
+                                                        then addList ind (ListBullet (ind) [])           <$> parse (T_ListItemBullet (ind + 2) char : (drop 3 xs))
+                                                        else parse (T_ListItemBullet ind char : xs)
             --T_Header                  ->
             T_ListItemBullet ind2 char2 ->      if (ind == ind2) && (char == char2)
-                                                    then addList (Text [])           <$> parse (T_ListItemBullet ind char : xs)
-                                                    else parse (T_Empty:x:xs)
+                                                    then parse (T_Empty:x:xs)-- addList (Text [])           <$> parse (T_ListItemBullet ind char : xs)
+                                                    -- TODO: suffix validation
+                                                    else if (ind < ind2)
+                                                        then addList ind (ListBullet ind [])     <$> parse (T_ListItemBullet (ind2) char : xs)
+                                                        else if (ind > ind2)
+                                                                then addList ind (ListBullet ind [])     <$> parse (T_ListItemBullet (ind2) char : xs)
+                                                                else parse (T_Empty:x:xs)
             -- excluded
             _                   ->      parse (x:xs)
         else parse xs
@@ -477,7 +495,7 @@ addP (P ast1) (Sequence (P ast2 : asts)) = Sequence (P (ast1 ++ ast2) : asts)
 addP (P ast1) (Sequence (CS ast2 : asts)) = addP (P (ast1 ++ [CS ast2])) (Sequence asts)
 addP (P ast1) (Sequence (EM ast2 : asts)) = addP (P (ast1 ++ [EM ast2])) (Sequence asts)
 addP (P ast1) (Sequence (ST ast2 : asts)) = addP (P (ast1 ++ [ST ast2])) (Sequence asts)
-addP (P ast1) (Sequence (ListBullet ast2 : asts)) = addP (P (ast1 ++ [ListBullet ast2])) (Sequence asts)
+addP (P ast1) (Sequence (ListBullet nest ast2 : asts)) = addP (P (ast1 ++ [ListBullet nest ast2])) (Sequence asts)
 addP (Text str) (Sequence (CS ast2 : asts)) = addP (P ((Text str) : [CS ast2])) (Sequence asts)
 addP (Text str) (Sequence (Text str2 : asts)) = Sequence (P [(Text (str++str2))] : asts)
 -- Text und dahinter ein P
@@ -535,18 +553,20 @@ addST strng ast = error $ show strng ++ "\n" ++ show ast
 
 ----------------------------
 
-addList :: AST -> AST -> AST
-
-addList (ListBullet ast1) (Sequence (ListBullet ast2 : asts)) = Sequence (ListBullet (ast1 ++ ast2) : asts)
+addList :: Int -> AST -> AST -> AST
+addList nest (ListBullet nest1 ast1) (Sequence (ListBullet nest2 ast2 : asts))
+    | nest1 == nest2    = Sequence (ListBullet nest1 (ast1 ++ ast2) : asts)
+    | nest1 < nest2     = Sequence (ListBullet nest1 (ast1 ++ [ListBullet nest2 ast2]) : asts)
+    | nest1 > nest2     = Sequence (ListBullet nest1 ast1 : ListBullet nest2 ast2 : asts)
 -- addList (List ast1) (Sequence (EM ast2 : asts)) = addST (ST (ast1 ++ [EM ast2])) (Sequence asts)
 -- addList (List ast1) (Sequence (CS ast2 : asts)) = Sequence (ST ast1 : CS ast2 : asts)
 --addList (ListBullet ast1) (Sequence (P ast2 : asts)) = addList (ListBullet (ast1 ++ [P ast2])) (Sequence asts)
 -- addList (P (parag : xs)) (Sequence (ListBullet ast2 : asts)) = Sequence (ListBullet (((addP (P []) parag) : ast2)) : asts)
 -- addList (P pgraph) (Sequence asts) = Sequence (ListBullet pgraph : asts)
 --addList (P (p:pgraph)) (Sequence asts) = Sequence ((ListBullet (addP p pgraph)) : asts)
-addList text@(Text _) (Sequence (ListBullet ast2 : asts)) = Sequence (ListBullet (text : ast2) : asts)
-addList text@(Text _) (Sequence asts) = Sequence (ListBullet [text] : asts)
-
+addList nest text@(Text _) (Sequence (ListBullet nest1 ast2 : asts)) = Sequence (ListBullet nest (text : ast2) : asts)
+addList nest text@(Text _) (Sequence asts) = Sequence (ListBullet nest [text] : asts)
+addList nest x@(_) y@(_) = error $ show y
 adddList strng ast = error $ show strng ++ "\n" ++ show ast
 
 ----------------------------

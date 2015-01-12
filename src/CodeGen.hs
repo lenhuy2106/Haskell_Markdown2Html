@@ -56,7 +56,7 @@ generateHTML' (EM ast) =
     "<em>" ++ concatMap generateHTML' ast ++ "\n</em>\n"
 generateHTML' (ST ast) =
     "<strong>" ++ concatMap generateHTML' ast ++ "\n</strong>\n"
-generateHTML' (ListBullet ast) =
+generateHTML' (ListBullet nest ast) =
     "<li>" ++ concatMap generateHTML' ast ++ "\n</li>\n"
 generateHTML' HardLineBreak = "</ br>"
 generateHTML' Empty = []

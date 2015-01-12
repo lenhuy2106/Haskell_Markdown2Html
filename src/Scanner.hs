@@ -211,8 +211,9 @@ scanListItems prefixB xs =
         second  = xs !! 1
     in if (`elem` "-+*") first
             -- bullet list
-            then ((T_ListItemBullet (prefixB + 1 + suffixB) first) : ) <$> scan rest
+            -- TODO: additional suffix/indention param needed
+            then ((T_ListItemBullet (prefixB) first) : ) <$> scan rest
             -- ordered list
             else if (((`elem` "0123456789") first) && ((`elem` ".)") second))
-                then ((T_ListItemOrder (prefixB + 1 + suffixB) (digitToInt first) second) : ) <$> scan rest
+                then ((T_ListItemOrder (prefixB) (digitToInt first) second) : ) <$> scan rest
                 else (T_Newline : ) <$> scan xs
