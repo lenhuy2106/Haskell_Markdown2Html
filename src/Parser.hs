@@ -283,8 +283,9 @@ parse (T_ListItemBullet ind char : x : xs) =
     if xs /= []
         then case x of
             -- included
-            T_Newline                   ->      addList ind (Text "\n")         <$> parse (T_ListItemBullet ind char : xs)
-            T_Text str                  ->      addList ind (Text str)          <$> parse (T_ListItemBullet ind char : xs)
+            T_Newline                   ->      addList ind (Text "\n")                       <$> parse (T_ListItemBullet ind char : xs)
+            T_Text str                  ->      addList ind (Text str)                        <$> parse (T_ListItemBullet ind char : xs)
+            T_Blanks b                  ->      addList ind (Text (replicate b ' '))          <$> parse (T_ListItemBullet ind char : xs)
             T_IndCodeBlock              ->      let a = xs !! 0 == T_Blanks 0
                                                     b = xs !! 1 == T_Text "-" -- TODO: `elem` all chars
                                                     c = xs !! 2 == T_Blanks 1
@@ -550,14 +551,14 @@ addList :: Int -> AST -> AST -> AST
 addList nest (ListBullet nest1 ast1) (Sequence (ListBullet nest2 ast2 : asts))
     | nest1 == nest2    = Sequence (ListBullet nest1 ast1 : ListBullet nest2 ast2 : asts)
     | nest1 < nest2     = Sequence (ListBullet nest1 (ast1 ++ [ListBullet nest2 ast2]) : asts)
-    | nest1 >= nest2    = Sequence (ListBullet nest1 ast1 : ListBullet nest2 ast2 : asts)
+    | nest1 > nest2     = Sequence (ListBullet nest1 ast1 : ListBullet nest2 ast2 : asts)
 -- addList (List ast1) (Sequence (EM ast2 : asts)) = addST (ST (ast1 ++ [EM ast2])) (Sequence asts)
 -- addList (List ast1) (Sequence (CS ast2 : asts)) = Sequence (ST ast1 : CS ast2 : asts)
 --addList (ListBullet ast1) (Sequence (P ast2 : asts)) = addList (ListBullet (ast1 ++ [P ast2])) (Sequence asts)
 -- addList (P (parag : xs)) (Sequence (ListBullet ast2 : asts)) = Sequence (ListBullet (((addP (P []) parag) : ast2)) : asts)
 -- addList (P pgraph) (Sequence asts) = Sequence (ListBullet pgraph : asts)
 --addList (P (p:pgraph)) (Sequence asts) = Sequence ((ListBullet (addP p pgraph)) : asts)
-addList nest text@(Text _) (Sequence (ListBullet nest1 ast2 : asts)) = Sequence (ListBullet nest (text : ast2) : asts)
+addList nest text@(Text _) (Sequence (ListBullet nest1 ast2 : asts)) = Sequence (ListBullet nest1 (text : ast2) : asts)
 addList nest text@(Text _) (Sequence asts) = Sequence (ListBullet nest [text] : asts)
 addList nest x@(_) y@(_) = error $ show y
 adddList strng ast = error $ show strng ++ "\n" ++ show ast
