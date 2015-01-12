@@ -292,14 +292,7 @@ parse (T_ListItemBullet ind char : x : xs) =
                                                         then addList ind (ListBullet (ind) [])           <$> parse (T_ListItemBullet (ind + 2) char : (drop 3 xs))
                                                         else parse (T_ListItemBullet ind char : xs)
             --T_Header                  ->
-            T_ListItemBullet ind2 char2 ->      if (ind == ind2) && (char == char2)
-                                                    then parse (T_Empty:x:xs)-- addList (Text [])           <$> parse (T_ListItemBullet ind char : xs)
-                                                    -- TODO: suffix validation
-                                                    else if (ind < ind2)
-                                                        then addList ind (ListBullet ind [])     <$> parse (T_ListItemBullet (ind2) char : xs)
-                                                        else if (ind > ind2)
-                                                                then addList ind (ListBullet ind [])     <$> parse (T_ListItemBullet (ind2) char : xs)
-                                                                else parse (T_Empty:x:xs)
+            T_ListItemBullet ind2 char2 ->      addList ind (ListBullet ind [])     <$> parse (T_ListItemBullet (ind2) char : xs)
             -- excluded
             _                   ->      parse (x:xs)
         else parse xs
@@ -555,9 +548,9 @@ addST strng ast = error $ show strng ++ "\n" ++ show ast
 
 addList :: Int -> AST -> AST -> AST
 addList nest (ListBullet nest1 ast1) (Sequence (ListBullet nest2 ast2 : asts))
-    | nest1 == nest2    = Sequence (ListBullet nest1 (ast1 ++ ast2) : asts)
+    | nest1 == nest2    = Sequence (ListBullet nest1 ast1 : ListBullet nest2 ast2 : asts)
     | nest1 < nest2     = Sequence (ListBullet nest1 (ast1 ++ [ListBullet nest2 ast2]) : asts)
-    | nest1 > nest2     = Sequence (ListBullet nest1 ast1 : ListBullet nest2 ast2 : asts)
+    | nest1 >= nest2    = Sequence (ListBullet nest1 ast1 : ListBullet nest2 ast2 : asts)
 -- addList (List ast1) (Sequence (EM ast2 : asts)) = addST (ST (ast1 ++ [EM ast2])) (Sequence asts)
 -- addList (List ast1) (Sequence (CS ast2 : asts)) = Sequence (ST ast1 : CS ast2 : asts)
 --addList (ListBullet ast1) (Sequence (P ast2 : asts)) = addList (ListBullet (ast1 ++ [P ast2])) (Sequence asts)

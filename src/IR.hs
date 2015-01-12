@@ -19,6 +19,7 @@ data Token = T_Newline          -- '\n'
            | T_EM
            | T_ST
            | T_Empty
+           | T_Separator Int
            | T_End
     deriving (Show, Eq)
 
