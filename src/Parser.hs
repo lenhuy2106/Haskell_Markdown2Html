@@ -293,7 +293,7 @@ parse (T_ListItemBullet ind char : x : xs) =
                                                         then addList ind (ListBullet (ind) [])           <$> parse (T_ListItemBullet (ind + 2) char : (drop 3 xs))
                                                         else parse (T_ListItemBullet ind char : xs)
             --T_Header                  ->
-            T_ListItemBullet ind2 char2 ->      addList ind (ListBullet ind [])     <$> parse (T_ListItemBullet (ind2) char : xs)
+            T_ListItemBullet ind2 char2 ->      addList ind (ListBullet ind [])     <$> parse (x : xs)
             -- excluded
             _                   ->      parse (x:xs)
         else parse xs
@@ -549,7 +549,7 @@ addST strng ast = error $ show strng ++ "\n" ++ show ast
 
 addList :: Int -> AST -> AST -> AST
 addList nest (ListBullet nest1 ast1) (Sequence (ListBullet nest2 ast2 : asts))
-    | nest1 == nest2    = Sequence (ListBullet nest1 ast1 : ListBullet nest2 ast2 : asts)
+    | nest1 == nest2    = Sequence (ListBullet nest1 (ast1 ++ [ListBulletItem nest2 ast2]) : asts) -- WORKAROUND
     | nest1 < nest2     = Sequence (ListBullet nest1 (ast1 ++ [ListBullet nest2 ast2]) : asts)
     | nest1 > nest2     = Sequence (ListBullet nest1 ast1 : ListBullet nest2 ast2 : asts)
 -- addList (List ast1) (Sequence (EM ast2 : asts)) = addST (ST (ast1 ++ [EM ast2])) (Sequence asts)

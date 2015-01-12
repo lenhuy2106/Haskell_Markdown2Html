@@ -1,3 +1,3 @@
 - two
-  - three ccvsd fvdg
+  - three
   - four
