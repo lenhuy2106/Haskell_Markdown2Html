@@ -44,6 +44,7 @@ data AST = Sequence [AST]   -- eine Sequenz von HTML-Elementen
          | ListBullet Int [AST] -- nest asts
          | ListBulletItem Int [AST]
          | ListOrder Int Int [AST] -- nest order asts
+         | ListBulletClose Int [AST]
          | Empty
     deriving (Eq, Show)
 
